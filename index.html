@@ -3,560 +3,620 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>LinguaFlow</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<title>LinguaFlow — Neural Translator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
 <style>
-/* ── Reset & Tokens ──────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#0d0d12;--paper:#f5f3ee;--cream:#ece9e0;
-  --accent:#c8410a;--accent2:#1a6b4a;--accent3:#2c4a8c;
-  --muted:#8a8578;--border:#d4cfc4;
-  --card:#ffffff;--shadow:rgba(13,13,18,0.08);
+  --bg:#09090f;
+  --surface:#111118;
+  --surface2:#18181f;
+  --border:#2a2a35;
+  --ink:#f0eff8;
+  --muted:#6b6a7a;
+  --soft:#a09fb5;
+  --accent:#6c63ff;
+  --accent-glow:rgba(108,99,255,.25);
+  --green:#22d472;
+  --red:#ff5c5c;
+  --amber:#fbbf24;
 }
 html{scroll-behavior:smooth}
 body{
-  background:var(--paper);color:var(--ink);
-  font-family:'Outfit',sans-serif;font-weight:400;
+  background:var(--bg);color:var(--ink);
+  font-family:'Instrument Sans',sans-serif;
   min-height:100vh;overflow-x:hidden;
 }
 
-/* ── Texture overlay ─────────────────────────────────────────────── */
+/* ── Noise grain overlay ─────────────────────────────── */
 body::before{
-  content:'';position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events:none;z-index:0;
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-size:200px 200px;opacity:.4;
 }
 
-/* ── Nav ──────────────────────────────────────────────────────────── */
+/* ── Ambient glow ────────────────────────────────────── */
+.glow-orb{
+  position:fixed;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle, rgba(108,99,255,.12) 0%, transparent 70%);
+  pointer-events:none;z-index:0;
+  top:-200px;right:-200px;
+  animation:orb-drift 12s ease-in-out infinite alternate;
+}
+@keyframes orb-drift{
+  from{transform:translate(0,0)}
+  to{transform:translate(-60px,60px)}
+}
+
+/* ── Nav ─────────────────────────────────────────────── */
 nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
+  position:fixed;top:0;left:0;right:0;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
-  padding:1rem 2.5rem;
-  background:rgba(245,243,238,0.85);
-  backdrop-filter:blur(16px);
+  padding:.85rem 2rem;
+  background:rgba(9,9,15,.8);
+  backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
 }
 .logo{
-  font-family:'Playfair Display',serif;
-  font-size:1.5rem;font-weight:900;letter-spacing:-0.02em;
-  color:var(--ink);
+  font-family:'Syne',sans-serif;
+  font-size:1.2rem;font-weight:800;
+  letter-spacing:-.03em;color:var(--ink);
 }
 .logo span{color:var(--accent);}
-.nav-right{display:flex;align-items:center;gap:1.5rem;}
-.nav-right a{
-  color:var(--muted);text-decoration:none;font-size:0.88rem;
-  transition:color .2s;
+.nav-links{display:flex;gap:1.5rem;align-items:center;}
+.nav-links a{
+  color:var(--muted);text-decoration:none;
+  font-size:.82rem;font-weight:500;
+  transition:color .2s;letter-spacing:.01em;
 }
-.nav-right a:hover{color:var(--ink);}
-.api-status{
-  display:flex;align-items:center;gap:0.4rem;
-  font-size:0.78rem;padding:0.3rem 0.8rem;
-  border:1px solid var(--border);border-radius:100px;
-  background:var(--card);
-}
-.status-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:#ccc;transition:background .4s;
-}
-.status-dot.online{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);}
-.status-dot.error{background:#ef4444;}
+.nav-links a:hover{color:var(--ink);}
 
-/* ── Hero ─────────────────────────────────────────────────────────── */
+/* status pill */
+.status-pill{
+  display:flex;align-items:center;gap:.5rem;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:100px;padding:.3rem .9rem .3rem .55rem;
+  font-size:.75rem;font-weight:600;
+  color:var(--soft);cursor:pointer;
+  transition:border-color .2s;
+  letter-spacing:.02em;
+}
+.status-pill:hover{border-color:var(--accent);}
+.dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:var(--muted);transition:background .4s,box-shadow .4s;
+}
+.dot.online{background:var(--green);box-shadow:0 0 0 3px rgba(34,212,114,.2);}
+.dot.error{background:var(--red);box-shadow:0 0 0 3px rgba(255,92,92,.2);}
+.dot.checking{background:var(--amber);animation:blink .9s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── Hero ────────────────────────────────────────────── */
 .hero{
-  min-height:100vh;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:7rem 2rem 5rem;text-align:center;
   position:relative;z-index:1;
+  padding:7.5rem 2rem 4rem;
+  text-align:center;
 }
-.hero-eyebrow{
-  display:inline-flex;align-items:center;gap:0.5rem;
-  font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;
-  color:var(--accent);font-weight:600;margin-bottom:1.5rem;
-  animation:fadeUp .5s ease both;
+.eyebrow{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.68rem;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--accent);
+  border:1px solid rgba(108,99,255,.3);
+  background:rgba(108,99,255,.06);
+  border-radius:100px;padding:.3rem .9rem;
+  margin-bottom:1.8rem;
+  animation:fade-up .6s ease both;
 }
-.hero-eyebrow::before,.hero-eyebrow::after{
-  content:'';display:block;height:1px;width:32px;background:var(--accent);opacity:.4;
-}
+.eyebrow::before{content:'◆';font-size:.5rem;}
 h1{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(3.5rem,9vw,7.5rem);
-  font-weight:900;line-height:.95;letter-spacing:-0.04em;
-  animation:fadeUp .6s .08s ease both;
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.8rem,7vw,5.5rem);
+  font-weight:800;line-height:1;
+  letter-spacing:-.04em;
+  animation:fade-up .6s .07s ease both;
 }
-h1 em{font-style:italic;color:var(--accent);}
-.hero-desc{
-  max-width:480px;margin:1.8rem auto 0;
-  color:var(--muted);font-size:1.05rem;line-height:1.75;
-  animation:fadeUp .6s .15s ease both;
+h1 .grad{
+  background:linear-gradient(135deg,#a78bfa,#6c63ff,#38bdf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
 }
-.lang-pills{
-  display:flex;flex-wrap:wrap;gap:.6rem;
+.hero-sub{
+  max-width:420px;margin:1.4rem auto 0;
+  color:var(--soft);font-size:.98rem;line-height:1.75;
+  animation:fade-up .6s .14s ease both;
+}
+.lang-badges{
+  display:flex;flex-wrap:wrap;gap:.5rem;
   justify-content:center;margin-top:2rem;
-  animation:fadeUp .6s .22s ease both;
+  animation:fade-up .6s .2s ease both;
 }
-.pill{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:100px;padding:.35rem .9rem;
-  font-size:.82rem;color:var(--muted);
-  transition:all .2s;cursor:default;
+.badge{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;padding:.28rem .75rem;
+  font-size:.78rem;color:var(--soft);
+  transition:all .2s;
 }
-.pill:hover{border-color:var(--accent);color:var(--accent);}
-.scroll-hint{
-  margin-top:3.5rem;display:flex;flex-direction:column;
-  align-items:center;gap:.4rem;color:var(--muted);
-  font-size:.78rem;animation:fadeUp .6s .3s ease both;
-}
-.scroll-arrow{
-  width:24px;height:24px;border-right:2px solid var(--muted);
-  border-bottom:2px solid var(--muted);
-  transform:rotate(45deg);
-  animation:bounce 1.8s ease-in-out infinite;
-}
-@keyframes bounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(5px)}}
+.badge:hover{border-color:var(--accent);color:var(--accent);}
 
-/* ── Section ──────────────────────────────────────────────────────── */
-section{
-  max-width:960px;margin:0 auto;
-  padding:5rem 2rem;position:relative;z-index:1;
-}
-.section-tag{
-  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--accent2);font-weight:600;margin-bottom:.6rem;
-}
-.section-title{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(1.8rem,4vw,2.6rem);
-  font-weight:700;letter-spacing:-.03em;line-height:1.15;
-  margin-bottom:2.5rem;
-}
-.section-title em{font-style:italic;color:var(--accent);}
+/* ── Page wrapper ────────────────────────────────────── */
+.page{max-width:860px;margin:0 auto;padding:0 1.5rem 6rem;position:relative;z-index:1;}
 
-/* ── Translator Card ──────────────────────────────────────────────── */
-.card{
-  background:var(--card);border:1px solid var(--border);
+/* ── Section head ────────────────────────────────────── */
+.sh{margin-bottom:1.5rem;}
+.sh-kicker{
+  font-size:.67rem;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;
+}
+.sh-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(1.5rem,3vw,2rem);
+  font-weight:800;letter-spacing:-.03em;
+}
+.sh-title em{font-style:italic;color:var(--soft);font-weight:400;}
+
+/* ── API Notice ──────────────────────────────────────── */
+.api-notice{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;padding:1.25rem 1.5rem;
+  display:flex;align-items:flex-start;
+  justify-content:space-between;gap:1.2rem;
+  flex-wrap:wrap;margin-bottom:1.5rem;
+  transition:border-color .2s;
+}
+.api-notice.connected{border-color:rgba(34,212,114,.3);}
+.api-notice.offline{border-color:rgba(255,92,92,.2);}
+.notice-left h4{
+  font-size:.88rem;font-weight:600;
+  margin-bottom:.25rem;
+}
+.notice-left p{
+  font-size:.78rem;color:var(--muted);
+  line-height:1.6;
+}
+.notice-url{
+  font-family:monospace;font-size:.72rem;
+  color:var(--green);margin-top:.4rem;word-break:break-all;
+}
+.btn-cfg{
+  background:var(--accent);color:white;border:none;
+  border-radius:9px;padding:.45rem 1.1rem;
+  font-family:'Instrument Sans',sans-serif;
+  font-size:.8rem;font-weight:600;cursor:pointer;
+  white-space:nowrap;flex-shrink:0;
+  transition:opacity .2s,transform .15s;
+}
+.btn-cfg:hover{opacity:.85;transform:translateY(-1px);}
+
+/* ── Translator card ─────────────────────────────────── */
+.tcard{
+  background:var(--surface);
+  border:1px solid var(--border);
   border-radius:20px;overflow:hidden;
-  box-shadow:0 8px 40px var(--shadow);
 }
-.card-head{
-  background:var(--cream);border-bottom:1px solid var(--border);
-  padding:1rem 1.4rem;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:.8rem;
+
+/* lang bar */
+.lang-bar{
+  display:flex;align-items:center;
+  padding:1rem 1.25rem;gap:.75rem;
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
 }
-.lang-row{display:flex;align-items:center;gap:.6rem;}
+.lang-group{display:flex;align-items:center;gap:.5rem;min-width:0;}
+.lang-group label{
+  font-size:.67rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;
+}
 select{
-  background:var(--card);color:var(--ink);
-  border:1px solid var(--border);border-radius:10px;
-  padding:.45rem .8rem;font-family:'Outfit',sans-serif;
-  font-size:.88rem;cursor:pointer;outline:none;
+  background:var(--bg);color:var(--ink);
+  border:1px solid var(--border);border-radius:8px;
+  padding:.38rem 2rem .38rem .7rem;
+  font-family:'Instrument Sans',sans-serif;font-size:.85rem;
+  cursor:pointer;outline:none;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6a7a'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .55rem center;
   transition:border-color .2s;
 }
 select:focus{border-color:var(--accent);}
+.spacer{flex:1;}
 .swap-btn{
-  background:transparent;border:1px solid var(--border);
-  color:var(--muted);border-radius:50%;
-  width:34px;height:34px;cursor:pointer;font-size:1rem;
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--muted);border-radius:8px;
+  width:34px;height:34px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem;
   transition:all .25s;
 }
 .swap-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg);}
 
-.card-body{
-  display:grid;grid-template-columns:1fr 1fr;
-  min-height:200px;
-}
-.pane{padding:1.4rem;position:relative;}
-.pane+.pane{border-left:1px solid var(--border);}
-.pane-label{
-  font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:.7rem;
+/* panels */
+.panels{display:grid;grid-template-columns:1fr 1fr;}
+.panel{display:flex;flex-direction:column;padding:1.2rem 1.25rem;}
+.panel:first-child{border-right:1px solid var(--border);}
+.panel-lbl{
+  font-size:.65rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;
 }
 textarea{
-  width:100%;background:transparent;border:none;outline:none;
-  color:var(--ink);font-family:'Outfit',sans-serif;
-  font-size:1.05rem;resize:none;min-height:155px;line-height:1.65;
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--ink);font-family:'Instrument Sans',sans-serif;
+  font-size:.97rem;resize:none;min-height:155px;line-height:1.7;
 }
-textarea::placeholder{color:#bbb;}
-.output-area{
-  font-size:1.05rem;line-height:1.65;
-  min-height:155px;color:var(--ink);
-  position:relative;
+textarea::placeholder{color:var(--muted);}
+.output-wrap{
+  min-height:155px;font-size:.97rem;
+  line-height:1.7;position:relative;
 }
-.output-area.loading::after{
-  content:'';display:inline-block;
-  width:14px;height:14px;
-  border:2px solid var(--border);border-top-color:var(--accent);
-  border-radius:50%;animation:spin .7s linear infinite;
-  vertical-align:middle;margin-left:.5rem;
+.out-placeholder{color:var(--muted);font-style:italic;}
+.loading-row{display:flex;gap:5px;align-items:center;padding-top:4px;}
+.loading-row span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);
+  animation:ld .8s infinite ease-in-out;
+}
+.loading-row span:nth-child(2){animation-delay:.15s;}
+.loading-row span:nth-child(3){animation-delay:.3s;}
+@keyframes ld{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+
+/* action bar */
+.action-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 1.25rem;gap:.6rem;flex-wrap:wrap;
+  background:var(--surface2);border-top:1px solid var(--border);
+}
+.icon-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
+.ibtn{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--muted);border-radius:7px;
+  padding:.3rem .7rem;font-size:.75rem;
+  display:flex;align-items:center;gap:.25rem;
+  cursor:pointer;font-family:'Instrument Sans',sans-serif;
+  transition:all .2s;
+}
+.ibtn:hover{border-color:var(--accent);color:var(--accent);}
+.btn-go{
+  background:var(--accent);color:white;border:none;
+  border-radius:10px;padding:.5rem 1.4rem;
+  font-family:'Instrument Sans',sans-serif;
+  font-size:.88rem;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:.4rem;
+  transition:opacity .2s,transform .15s;
+}
+.btn-go:hover:not(:disabled){opacity:.85;transform:translateY(-1px);}
+.btn-go:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.spinner{
+  width:13px;height:13px;
+  border:2px solid rgba(255,255,255,.3);
+  border-top-color:white;border-radius:50%;
+  animation:spin .7s linear infinite;display:none;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-.output-placeholder{color:#bbb;font-style:italic;}
 
-.card-foot{
-  background:var(--cream);border-top:1px solid var(--border);
-  padding:.9rem 1.4rem;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:.7rem;
+/* back-translate */
+.back-row{
+  display:none;margin-top:.8rem;
+  background:rgba(34,212,114,.06);
+  border:1px solid rgba(34,212,114,.2);
+  border-radius:12px;padding:.85rem 1.1rem;
+  font-size:.85rem;color:var(--green);line-height:1.65;
 }
-.foot-btns{display:flex;gap:.5rem;flex-wrap:wrap;}
-.icon-btn{
-  background:var(--card);border:1px solid var(--border);
-  color:var(--muted);border-radius:8px;
-  padding:.38rem .8rem;font-size:.8rem;cursor:pointer;
-  display:flex;align-items:center;gap:.3rem;
-  transition:all .2s;font-family:'Outfit',sans-serif;
-}
-.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
-.btn-translate{
-  background:var(--accent);color:white;
-  border:none;cursor:pointer;
-  padding:.55rem 1.6rem;border-radius:10px;
-  font-family:'Outfit',sans-serif;font-size:.92rem;font-weight:500;
-  transition:opacity .2s,transform .2s;
-  display:flex;align-items:center;gap:.5rem;
-}
-.btn-translate:hover{opacity:.88;transform:translateY(-1px);}
-.btn-translate:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.back-row strong{font-weight:600;opacity:.7;}
 
-/* ── API Banner ───────────────────────────────────────────────────── */
-.api-banner{
-  background:var(--ink);color:#f0f0e8;
-  border-radius:20px;padding:2.5rem;
-  display:grid;grid-template-columns:1fr auto;
-  gap:2rem;align-items:center;
-  margin-bottom:2rem;
+/* ── Steps grid ──────────────────────────────────────── */
+.steps{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:1rem;
 }
-.api-banner h3{
-  font-family:'Playfair Display',serif;
-  font-size:1.4rem;margin-bottom:.5rem;
+.step{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:1.35rem;
+  transition:border-color .25s,transform .25s;
 }
-.api-banner p{font-size:.88rem;color:#9a9888;line-height:1.6;}
-.api-url{
-  background:rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:10px;padding:.6rem 1rem;
-  font-family:monospace;font-size:.8rem;color:#c8e6c9;
-  margin-top:.8rem;word-break:break-all;
+.step:hover{border-color:var(--accent);transform:translateY(-3px);}
+.step-n{
+  font-family:'Syne',sans-serif;
+  font-size:1.8rem;font-weight:800;
+  color:var(--accent);line-height:1;opacity:.6;margin-bottom:.5rem;
 }
-.edit-btn{
-  background:var(--accent);color:white;border:none;
-  border-radius:10px;padding:.6rem 1.3rem;
-  font-family:'Outfit',sans-serif;cursor:pointer;
-  font-size:.88rem;white-space:nowrap;
-  transition:opacity .2s;
+.step h4{font-size:.9rem;font-weight:600;margin-bottom:.3rem;}
+.step p{font-size:.78rem;color:var(--muted);line-height:1.6;}
+.step code{
+  display:inline-block;margin-top:.5rem;
+  background:var(--bg);border-radius:5px;
+  padding:.2rem .5rem;font-size:.72rem;
+  color:var(--soft);font-family:monospace;
 }
-.edit-btn:hover{opacity:.85;}
 
-/* ── Config modal ─────────────────────────────────────────────────── */
+/* ── Modal ───────────────────────────────────────────── */
 .overlay{
   display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(13,13,18,.6);backdrop-filter:blur(6px);
-  align-items:center;justify-content:center;
+  background:rgba(0,0,0,.7);
+  backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:1rem;
 }
 .overlay.open{display:flex;}
 .modal{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:20px;padding:2rem;width:min(500px,90vw);
-  box-shadow:0 40px 80px rgba(13,13,18,.2);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;padding:2rem;
+  width:min(480px,100%);
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+  animation:modal-in .25s ease both;
 }
+@keyframes modal-in{from{opacity:0;transform:scale(.96) translateY(8px)}}
 .modal h3{
-  font-family:'Playfair Display',serif;font-size:1.3rem;
-  margin-bottom:1rem;
+  font-family:'Syne',sans-serif;font-size:1.15rem;
+  font-weight:800;margin-bottom:1rem;
 }
-.modal label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:.3rem;}
+.modal-hint{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:.75rem 1rem;
+  font-size:.78rem;color:var(--muted);
+  line-height:1.65;margin-bottom:1.2rem;
+}
+.modal-hint code{
+  color:var(--soft);font-family:monospace;font-size:.75rem;
+}
+.modal label{
+  display:block;font-size:.7rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.4rem;
+}
 .modal input{
-  width:100%;background:var(--paper);color:var(--ink);
-  border:1px solid var(--border);border-radius:10px;
-  padding:.55rem .9rem;font-family:'Outfit',sans-serif;
-  font-size:.9rem;outline:none;margin-bottom:1rem;
+  width:100%;background:var(--bg);color:var(--ink);
+  border:1px solid var(--border);border-radius:9px;
+  padding:.55rem .9rem;font-family:'Instrument Sans',sans-serif;
+  font-size:.88rem;outline:none;margin-bottom:1.25rem;
   transition:border-color .2s;
 }
 .modal input:focus{border-color:var(--accent);}
-.modal-foot{display:flex;gap:.7rem;justify-content:flex-end;}
+.modal-foot{display:flex;gap:.6rem;justify-content:flex-end;}
 .btn-cancel{
   background:transparent;border:1px solid var(--border);
-  color:var(--muted);border-radius:10px;padding:.5rem 1.2rem;
-  font-family:'Outfit',sans-serif;cursor:pointer;
+  color:var(--muted);border-radius:9px;
+  padding:.48rem 1.2rem;cursor:pointer;
+  font-family:'Instrument Sans',sans-serif;font-size:.85rem;
+  transition:border-color .2s;
 }
+.btn-cancel:hover{border-color:var(--ink);color:var(--ink);}
 .btn-save{
-  background:var(--accent2);color:white;border:none;
-  border-radius:10px;padding:.5rem 1.4rem;
-  font-family:'Outfit',sans-serif;cursor:pointer;font-weight:500;
+  background:var(--accent);color:white;border:none;
+  border-radius:9px;padding:.48rem 1.4rem;
+  font-family:'Instrument Sans',sans-serif;
+  font-size:.85rem;font-weight:600;cursor:pointer;
+  transition:opacity .2s;
 }
-.modal .hint{
-  font-size:.78rem;color:var(--muted);
-  background:var(--cream);border-radius:8px;
-  padding:.7rem .9rem;margin-bottom:1rem;line-height:1.5;
-}
+.btn-save:hover{opacity:.85;}
 
-/* ── How it works ──────────────────────────────────────────────────── */
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;}
-.step{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:16px;padding:1.6rem;
-  transition:transform .2s,box-shadow .2s;
-}
-.step:hover{transform:translateY(-3px);box-shadow:0 12px 40px var(--shadow);}
-.step-num{
-  font-family:'Playfair Display',serif;
-  font-size:2.2rem;font-weight:900;color:var(--accent);
-  line-height:1;margin-bottom:.7rem;
-}
-.step h4{font-weight:600;margin-bottom:.4rem;}
-.step p{font-size:.86rem;color:var(--muted);line-height:1.6;}
-.step code{
-  display:block;margin-top:.7rem;
-  background:var(--cream);border-radius:6px;
-  padding:.4rem .6rem;font-size:.78rem;color:var(--ink);
-  font-family:monospace;
-}
-
-/* ── Architecture diagram ──────────────────────────────────────────── */
-.arch{
-  background:var(--ink);color:#f0f0e8;
-  border-radius:20px;padding:2.5rem;
-  font-family:monospace;font-size:.82rem;line-height:1.9;
-}
-.arch-title{
-  font-family:'Playfair Display',serif;font-size:1.1rem;
-  color:#f0f0e8;margin-bottom:1.2rem;font-family:'Outfit',sans-serif;
-  font-weight:600;font-style:normal;
-}
-.a-box{
-  display:inline-block;
-  border:1px solid rgba(255,255,255,.2);
-  border-radius:6px;padding:.15rem .5rem;
-  background:rgba(255,255,255,.06);
-}
-.a-vercel{color:#7ec8e3;}
-.a-stream{color:#a8e6cf;}
-.a-model{color:#ffd3a0;}
-.a-arrow{color:#888;}
-
-/* ── Toast ─────────────────────────────────────────────────────────── */
+/* ── Toast ───────────────────────────────────────────── */
 .toast{
-  position:fixed;bottom:1.8rem;left:50%;
-  transform:translateX(-50%) translateY(80px);
-  background:var(--ink);color:#f0f0e8;
-  border-radius:100px;padding:.6rem 1.4rem;
-  font-size:.85rem;z-index:300;
-  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 10px 30px rgba(13,13,18,.3);
+  position:fixed;bottom:1.5rem;left:50%;
+  transform:translateX(-50%) translateY(70px);
+  background:var(--ink);color:var(--bg);
+  border-radius:100px;padding:.5rem 1.3rem;
+  font-size:.82rem;font-weight:500;z-index:300;
   pointer-events:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;
 }
 .toast.show{transform:translateX(-50%) translateY(0);}
 
-/* ── Footer ────────────────────────────────────────────────────────── */
+/* ── Fade-up anim ────────────────────────────────────── */
+@keyframes fade-up{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:none}
+}
+.reveal{
+  opacity:0;transform:translateY(20px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.reveal.in{opacity:1;transform:none;}
+
+/* ── Footer ──────────────────────────────────────────── */
 footer{
-  border-top:1px solid var(--border);
-  padding:1.8rem 2.5rem;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:1rem;
-  color:var(--muted);font-size:.82rem;
   position:relative;z-index:1;
+  border-top:1px solid var(--border);
+  padding:1.4rem 2rem;
+  display:flex;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;gap:.8rem;
+  color:var(--muted);font-size:.77rem;
 }
 footer a{color:var(--muted);text-decoration:none;}
 footer a:hover{color:var(--accent);}
 
-/* ── Scroll reveal ─────────────────────────────────────────────────── */
-.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease;}
-.reveal.in{opacity:1;transform:none;}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-
-/* ── Responsive ────────────────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────── */
 @media(max-width:640px){
-  nav{padding:.9rem 1.2rem;}
-  .card-body{grid-template-columns:1fr;}
-  .pane+.pane{border-left:none;border-top:1px solid var(--border);}
-  .api-banner{grid-template-columns:1fr;}
-  h1{font-size:3rem;}
+  nav{padding:.75rem 1rem;}
+  .nav-links{display:none;}
+  .panels{grid-template-columns:1fr;}
+  .panel:first-child{border-right:none;border-bottom:1px solid var(--border);}
+  h1{font-size:2.5rem;}
+  .page{padding:0 1rem 4rem;}
+  .api-notice{flex-direction:column;}
 }
 </style>
 </head>
 <body>
+<div class="glow-orb"></div>
 
 <!-- NAV -->
 <nav>
   <div class="logo">Lingua<span>Flow</span></div>
-  <div class="nav-right">
-    <a href="#translate">Translate</a>
-    <a href="#how">How It Works</a>
+  <div class="nav-links">
+    <a href="#translator">Translate</a>
+    <a href="#how">How it works</a>
     <a href="https://github.com/paradise-007/French-To-English-Translation-NLP" target="_blank">GitHub ↗</a>
-    <div class="api-status">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Checking API…</span>
-    </div>
+  </div>
+  <div class="status-pill" onclick="openModal()">
+    <div class="dot checking" id="dot"></div>
+    <span id="statusTxt">Checking…</span>
   </div>
 </nav>
 
-<main>
-
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-eyebrow">Neural Machine Translation</div>
-  <h1>Words Without<br><em>Borders</em></h1>
-  <p class="hero-desc">
-    Real-time translation across French, English, Hindi & Gujarati —
-    powered by Helsinki-NLP models running on a free Streamlit backend.
-  </p>
-  <div class="lang-pills">
-    <div class="pill">🇫🇷 French</div>
-    <div class="pill">🇬🇧 English</div>
-    <div class="pill">🇮🇳 Hindi</div>
-    <div class="pill">🇮🇳 Gujarati</div>
-  </div>
-  <div class="scroll-hint">
-    <span>Scroll to translate</span>
-    <div class="scroll-arrow"></div>
+  <div class="eyebrow">Helsinki-NLP · MarianMT · Streamlit + Vercel</div>
+  <h1>Translate Without<br><span class="grad">Limits</span></h1>
+  <p class="hero-sub">Neural machine translation between French, English, Hindi and Gujarati — free, open source, and fast.</p>
+  <div class="lang-badges">
+    <span class="badge">🇫🇷 French</span>
+    <span class="badge">🇬🇧 English</span>
+    <span class="badge">🇮🇳 Hindi</span>
+    <span class="badge">🇮🇳 Gujarati</span>
   </div>
 </div>
 
-<!-- TRANSLATOR -->
-<section id="translate" class="reveal">
+<!-- MAIN -->
+<div class="page">
 
-  <!-- API Config Banner -->
-  <div class="api-banner">
-    <div>
-      <h3>🔌 Connected to Streamlit Backend</h3>
-      <p>This frontend calls your Streamlit app as a translation API. Set your Streamlit URL below.</p>
-      <div class="api-url" id="apiUrlDisplay">Not configured — click "Configure API" →</div>
-    </div>
-    <button class="edit-btn" onclick="openModal()">Configure API</button>
-  </div>
-
-  <div class="section-tag">Core Feature</div>
-  <div class="section-title">Instant Neural <em>Translation</em></div>
-
-  <div class="card">
-    <div class="card-head">
-      <div class="lang-row">
-        <span style="font-size:.78rem;color:var(--muted)">From</span>
-        <select id="srcLang" onchange="updateLabels()">
-          <option value="fr">🇫🇷 French</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="hi">🇮🇳 Hindi</option>
-          <option value="gu">🇮🇳 Gujarati</option>
-        </select>
-      </div>
-      <button class="swap-btn" onclick="swapLangs()" title="Swap">⇄</button>
-      <div class="lang-row">
-        <span style="font-size:.78rem;color:var(--muted)">To</span>
-        <select id="tgtLang" onchange="updateLabels()">
-          <option value="en">🇬🇧 English</option>
-          <option value="fr">🇫🇷 French</option>
-          <option value="hi">🇮🇳 Hindi</option>
-          <option value="gu">🇮🇳 Gujarati</option>
-        </select>
-      </div>
+  <!-- TRANSLATOR SECTION -->
+  <section id="translator" class="reveal">
+    <div class="sh">
+      <div class="sh-kicker">Live Translation</div>
+      <div class="sh-title">Type anything, <em>translate instantly</em></div>
     </div>
 
-    <div class="card-body">
-      <div class="pane">
-        <div class="pane-label" id="srcLabel">French</div>
-        <textarea id="inputText" placeholder="Type or paste text here…"
-          oninput="onInput()" onkeydown="handleKey(event)"></textarea>
+    <!-- API status notice -->
+    <div class="api-notice" id="apiNotice">
+      <div class="notice-left">
+        <h4 id="noticeTitle">🔌 Connect Your Streamlit Backend</h4>
+        <p id="noticeBody">Paste your deployed Streamlit URL to enable real neural translation.</p>
+        <div class="notice-url" id="noticeUrl" style="display:none"></div>
       </div>
-      <div class="pane">
-        <div class="pane-label" id="tgtLabel">English</div>
-        <div class="output-area" id="outputArea">
-          <span class="output-placeholder" id="outputPlaceholder">Translation appears here…</span>
-          <span id="outputText"></span>
+      <button class="btn-cfg" onclick="openModal()">⚙ Configure</button>
+    </div>
+
+    <!-- Card -->
+    <div class="tcard">
+      <!-- Language selector bar -->
+      <div class="lang-bar">
+        <div class="lang-group">
+          <label>From</label>
+          <select id="srcLang" onchange="updateLabels()">
+            <option value="fr">🇫🇷 French</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="hi">🇮🇳 Hindi</option>
+            <option value="gu">🇮🇳 Gujarati</option>
+          </select>
+        </div>
+        <button class="swap-btn" onclick="swapLangs()" title="Swap">⇄</button>
+        <div class="lang-group">
+          <label>To</label>
+          <select id="tgtLang" onchange="updateLabels()">
+            <option value="en">🇬🇧 English</option>
+            <option value="fr">🇫🇷 French</option>
+            <option value="hi">🇮🇳 Hindi</option>
+            <option value="gu">🇮🇳 Gujarati</option>
+          </select>
+        </div>
+        <div class="spacer"></div>
+        <span style="font-size:.7rem;color:var(--muted)">Ctrl+Enter to translate</span>
+      </div>
+
+      <!-- Input / Output panels -->
+      <div class="panels">
+        <div class="panel">
+          <div class="panel-lbl" id="srcLabel">French</div>
+          <textarea id="inputText"
+            placeholder="Type or paste your text here…"
+            oninput="onTyping()"
+            onkeydown="hotkey(event)"></textarea>
+        </div>
+        <div class="panel">
+          <div class="panel-lbl" id="tgtLabel">English</div>
+          <div class="output-wrap" id="outputWrap">
+            <span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span>
+            <span id="outText"></span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card-foot">
-      <div class="foot-btns">
-        <button class="icon-btn" onclick="speakOut()">🔊 Listen</button>
-        <button class="icon-btn" onclick="copyOut()">📋 Copy</button>
-        <button class="icon-btn" onclick="clearAll()">✕ Clear</button>
-        <button class="icon-btn" onclick="backTranslate()">↩ Verify</button>
+      <!-- Action bar -->
+      <div class="action-bar">
+        <div class="icon-btns">
+          <button class="ibtn" onclick="speakOut()">🔊 Listen</button>
+          <button class="ibtn" onclick="copyOut()">📋 Copy</button>
+          <button class="ibtn" onclick="clearAll()">✕ Clear</button>
+          <button class="ibtn" onclick="checkBackTranslate()">↩ Verify</button>
+        </div>
+        <button class="btn-go" id="goBtn" onclick="doTranslate()">
+          <span id="goLabel">Translate</span>
+          <div class="spinner" id="goSpinner"></div>
+        </button>
       </div>
-      <button class="btn-translate" id="translateBtn" onclick="doTranslate()">
-        <span id="btnLabel">Translate</span>
-        <span id="btnSpinner" style="display:none">⏳</span>
-      </button>
     </div>
-  </div>
-</section>
 
-<!-- HOW IT WORKS -->
-<section id="how" class="reveal">
-  <div class="section-tag">Architecture</div>
-  <div class="section-title">How the Two Apps <em>Connect</em></div>
+    <!-- Back-translation -->
+    <div class="back-row" id="backRow">
+      <strong>↩ Back-translation: </strong><span id="backText"></span>
+    </div>
+  </section>
 
-  <div class="arch" style="margin-bottom:2rem;">
-    <div class="arch-title">Full-Stack Flow</div>
-    <span class="a-vercel a-box">Vercel Frontend</span>
-    <span class="a-arrow"> ──── HTTP GET ──── </span>
-    <span class="a-stream a-box">Streamlit Backend</span>
-    <span class="a-arrow"> ──── loads ──── </span>
-    <span class="a-model a-box">Helsinki-NLP Model</span>
-    <br/>
-    <span class="a-arrow">  index.html (this file)</span>
-    <span class="a-arrow">         ?api=1&amp;text=bonjour&amp;src=fr&amp;tgt=en</span>
-    <span class="a-arrow">                        opus-mt-fr-en</span>
-    <br/><br/>
-    <span class="a-vercel">■ Vercel</span> — serves HTML/CSS/JS for free, global CDN<br/>
-    <span class="a-stream">■ Streamlit</span> — runs Python + model, exposes query-param API<br/>
-    <span class="a-model">■ Helsinki-NLP</span> — free pretrained seq2seq translation models
-  </div>
+  <!-- HOW IT WORKS -->
+  <section id="how" style="margin-top:4.5rem;" class="reveal">
+    <div class="sh">
+      <div class="sh-kicker">Architecture</div>
+      <div class="sh-title">How to <em>connect</em> everything</div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-n">01</div>
+        <h4>Deploy Backend</h4>
+        <p>Push app.py to GitHub, deploy free on Streamlit Cloud</p>
+        <code>share.streamlit.io</code>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <h4>Copy the URL</h4>
+        <p>Get your live Streamlit app URL after deployment</p>
+        <code>your-app.streamlit.app</code>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <h4>Configure Here</h4>
+        <p>Click ⚙ Configure above and paste the URL</p>
+        <code>Saved to your browser</code>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <h4>Translate!</h4>
+        <p>The API dot turns green and translation goes live</p>
+        <code>● API Online ✓</code>
+      </div>
+    </div>
+  </section>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01</div>
-      <h4>Deploy Streamlit</h4>
-      <p>Push <code>app.py</code> to GitHub, connect to share.streamlit.io</p>
-      <code>share.streamlit.io → New app</code>
-    </div>
-    <div class="step">
-      <div class="step-num">02</div>
-      <h4>Copy your URL</h4>
-      <p>Get your live Streamlit URL after deployment finishes</p>
-      <code>your-app.streamlit.app</code>
-    </div>
-    <div class="step">
-      <div class="step-num">03</div>
-      <h4>Configure Here</h4>
-      <p>Click "Configure API" above and paste your Streamlit URL</p>
-      <code>Saved to localStorage</code>
-    </div>
-    <div class="step">
-      <div class="step-num">04</div>
-      <h4>Deploy Frontend</h4>
-      <p>Push this <code>index.html</code> to GitHub and connect to Vercel</p>
-      <code>vercel.com → Import repo</code>
-    </div>
-  </div>
-</section>
-
-</main>
+</div>
 
 <footer>
-  <div class="logo" style="font-size:1rem;">LinguaFlow</div>
-  <div>
-    Vercel Frontend + Streamlit Backend ·
-    <a href="https://github.com/paradise-007/French-To-English-Translation-NLP" target="_blank">GitHub ↗</a>
-  </div>
-  <div>Free · Open Source · No API Key</div>
+  <div class="logo" style="font-size:.9rem;">LinguaFlow</div>
+  <div>Helsinki-NLP · MarianMT · <a href="https://github.com/paradise-007/French-To-English-Translation-NLP" target="_blank">GitHub ↗</a></div>
+  <div>Free & Open Source</div>
 </footer>
 
-<!-- CONFIG MODAL -->
-<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+<!-- CONFIGURE MODAL -->
+<div class="overlay" id="overlay" onclick="bgClick(event)">
   <div class="modal">
-    <h3>⚙️ Configure Streamlit API</h3>
-    <div class="hint">
-      After deploying your Streamlit app, paste its URL here.<br/>
-      Example: <code>https://your-app.streamlit.app</code>
+    <h3>⚙ Configure Streamlit API</h3>
+    <div class="modal-hint">
+      Deploy <strong>app.py</strong> on
+      <a href="https://share.streamlit.io" target="_blank" style="color:var(--accent)">share.streamlit.io</a>,
+      then copy and paste the full URL below.<br/><br/>
+      Example:<br/>
+      <code>https://paradise-007-linguaflow-backend-app-xxxx.streamlit.app</code>
     </div>
-    <label>Streamlit App URL</label>
-    <input type="url" id="apiUrlInput"
-      placeholder="https://your-app.streamlit.app"/>
+    <label>Your Streamlit App URL</label>
+    <input type="url" id="urlInput"
+      placeholder="https://yourname-yourapp-xxxx.streamlit.app"/>
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveConfig()">Save & Test</button>
+      <button class="btn-save" onclick="saveAndTest()">Save & Test Connection</button>
     </div>
   </div>
 </div>
@@ -565,763 +625,285 @@ footer a:hover{color:var(--accent);}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Config ─────────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'linguaflow_api_url';
-let apiUrl = localStorage.getItem(STORAGE_KEY) || '';
+// ── State ────────────────────────────────────────────────────────────────
+const STORE_KEY = 'lf_streamlit_url';
+let apiUrl = localStorage.getItem(STORE_KEY) || '';
 
 const LANG_NAMES = { fr:'French', en:'English', hi:'Hindi', gu:'Gujarati' };
 
-function init() {
-  updateApiDisplay();
-  updateLabels();
-  checkApiStatus();
-  initScrollReveal();
-}
-
-// ── API URL display ────────────────────────────────────────────────────────
-function updateApiDisplay() {
-  const el = document.getElementById('apiUrlDisplay');
-  if (apiUrl) {
-    el.textContent = apiUrl + '/?api=1&text={text}&src={src}&tgt={tgt}';
-    el.style.color = '#a8e6cf';
-  } else {
-    el.textContent = 'Not configured — click "Configure API" →';
-    el.style.color = '#888';
-  }
-}
-
-// ── Status check ───────────────────────────────────────────────────────────
-async function checkApiStatus() {
-  const dot  = document.getElementById('statusDot');
-  const txt  = document.getElementById('statusText');
-  if (!apiUrl) {
-    txt.textContent = 'API not set';
-    return;
-  }
-  txt.textContent = 'Checking…';
-  try {
-    // Ping with a simple known translation
-    const result = await callApi('bonjour', 'fr', 'en');
-    if (result) {
-      dot.classList.add('online');
-      txt.textContent = 'API online';
-    } else throw new Error();
-  } catch {
-    dot.classList.add('error');
-    txt.textContent = 'API offline';
-  }
-}
-
-// ── Core API call ──────────────────────────────────────────────────────────
-async function callApi(text, src, tgt) {
-  if (!apiUrl) {
-    showToast('⚠️ Configure your Streamlit URL first!');
-    return null;
-  }
-  const url = `${apiUrl}/?api=1&text=${encodeURIComponent(text)}&src=${src}&tgt=${tgt}`;
-  try {
-    const res  = await fetch(url, { mode: 'no-cors' }); // no-cors for cross-origin
-    // Because Streamlit doesn't send CORS headers, we use a workaround:
-    // The result is fetched via a CORS proxy or the Streamlit URL must have CORS enabled.
-    // For production, replace with your own proxy or use st.experimental_allow_unsafe_legacy_redirect
-    //
-    // DIRECT approach (works when both are on same domain or CORS is open):
-    const text2 = await fetch(
-      `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
-    );
-    const data = await text2.json();
-    const match = data.contents.match(/\{"translation".*?\}/);
-    if (match) return JSON.parse(match[0]).translation;
-    return null;
-  } catch (e) {
-    console.error('API error:', e);
-    return null;
-  }
-}
-
-// ── Translate ──────────────────────────────────────────────────────────────
-async function doTranslate() {
-  const text = document.getElementById('inputText').value.trim();
-  if (!text) { showToast('Enter some text first.'); return; }
-
-  const src = document.getElementById('srcLang').value;
-  const tgt = document.getElementById('tgtLang').value;
-  if (src === tgt) { showToast('Same language selected.'); return; }
-
-  setLoading(true);
-
-  let result = null;
-
-  if (apiUrl) {
-    result = await callApi(text, src, tgt);
-  }
-
-  // Fallback: demo translations when API not configured
-  if (!result) {
-    result = getDemoTranslation(text, src, tgt);
-  }
-
-  setLoading(false);
-
-  const outText = document.getElementById('outputText');
-  const outPlaceholder = document.getElementById('outputPlaceholder');
-  outText.textContent = result;
-  outPlaceholder.style.display = 'none';
-  showToast('✓ Translation complete');
-}
-
-// ── Demo fallback (works without API) ──────────────────────────────────────
-const demos = {
+// ── Demo translations (fallback when API offline) ────────────────────────
+const DEMOS = {
   'fr→en': {
-    'je me sens affreusement mal': 'I feel terrible',
-    'bonjour': 'Hello', 'merci': 'Thank you',
-    'je pense que je peux arranger ca': 'I think I can fix this',
-    'comment allez vous': 'How are you',
-    'bonne journee': 'Have a good day',
+    'bonjour':'Hello', 'merci':'Thank you', 'au revoir':'Goodbye',
+    'comment allez vous':'How are you', 'bonne journée':'Have a good day',
+    "je t'aime":'I love you', 'je me sens affreusement mal':'I feel terribly ill',
+    'oui':'Yes', 'non':'No', 'pardon':'Sorry',
   },
   'en→fr': {
-    'hello': 'Bonjour', 'thank you': 'Merci',
-    'how are you': 'Comment allez-vous',
-    'good morning': 'Bonjour', 'i love you': "Je t'aime",
+    'hello':'Bonjour', 'thank you':'Merci', 'goodbye':'Au revoir',
+    'how are you':'Comment allez-vous', 'yes':'Oui', 'no':'Non',
+    'i love you':"Je t'aime", 'sorry':'Pardon', 'good morning':'Bonjour',
   },
-  'hi→en': { 'नमस्ते': 'Hello', 'धन्यवाद': 'Thank you' },
-  'gu→en': { 'નમસ્તે': 'Hello', 'આભાર': 'Thank you' },
+  'hi→en': {
+    'नमस्ते':'Hello','धन्यवाद':'Thank you','अलविदा':'Goodbye','हाँ':'Yes','नहीं':'No',
+  },
+  'gu→en': {
+    'નમસ્તે':'Hello','આભાર':'Thank you','અલવિદા':'Goodbye','હા':'Yes','ના':'No',
+  },
 };
-function getDemoTranslation(text, src, tgt) {
-  const map = demos[`${src}→${tgt}`] || {};
-  const norm = text.toLowerCase().trim().replace(/[^a-z\u0900-\u097f\u0a80-\u0aff\s]/g,'');
-  for (const [k,v] of Object.entries(map)) {
-    if (k.toLowerCase() === norm) return v;
-  }
-  return `[Demo] ${text} → configure Streamlit API for real translation`;
+
+function demoLookup(text, src, tgt) {
+  const map = DEMOS[`${src}→${tgt}`] || {};
+  return map[text.toLowerCase().trim()] || null;
 }
 
-// ── Other actions ──────────────────────────────────────────────────────────
-function swapLangs() {
-  const s = document.getElementById('srcLang');
-  const t = document.getElementById('tgtLang');
-  [s.value, t.value] = [t.value, s.value];
-  const out = document.getElementById('outputText').textContent;
-  if (out) {
-    document.getElementById('inputText').value = out;
-    document.getElementById('outputText').textContent = '';
-    document.getElementById('outputPlaceholder').style.display = '';
-  }
+// ── Boot ─────────────────────────────────────────────────────────────────
+function init() {
   updateLabels();
+  updateNotice();
+  checkStatus();
+  setupReveal();
 }
 
+// ── Labels ───────────────────────────────────────────────────────────────
 function updateLabels() {
   document.getElementById('srcLabel').textContent = LANG_NAMES[document.getElementById('srcLang').value];
   document.getElementById('tgtLabel').textContent = LANG_NAMES[document.getElementById('tgtLang').value];
 }
 
-async function backTranslate() {
-  const out = document.getElementById('outputText').textContent;
-  if (!out) { showToast('Translate something first.'); return; }
+// ── Notice bar ───────────────────────────────────────────────────────────
+function updateNotice() {
+  const n = document.getElementById('apiNotice');
+  const title = document.getElementById('noticeTitle');
+  const body = document.getElementById('noticeBody');
+  const urlEl = document.getElementById('noticeUrl');
+  if (apiUrl) {
+    title.textContent = '🔌 Streamlit Backend Connected';
+    body.textContent = 'Sending requests via allorigins.win CORS proxy. Green dot = live translation.';
+    urlEl.textContent = apiUrl + '/?api=1&text={text}&src={src}&tgt={tgt}';
+    urlEl.style.display = 'block';
+    n.classList.add('connected');
+  } else {
+    title.textContent = '🔌 Connect Your Streamlit Backend';
+    body.textContent = 'Paste your deployed Streamlit URL to enable real neural translation.';
+    urlEl.style.display = 'none';
+    n.classList.remove('connected','offline');
+  }
+}
+
+// ── Status check ─────────────────────────────────────────────────────────
+function setDot(state, label) {
+  document.getElementById('dot').className = 'dot ' + state;
+  document.getElementById('statusTxt').textContent = label;
+}
+
+async function checkStatus() {
+  if (!apiUrl) { setDot('', 'Configure API'); return; }
+  setDot('checking', 'Checking…');
+  const result = await callAPI('bonjour', 'fr', 'en');
+  if (result) {
+    setDot('online', 'API Online ✓');
+    document.getElementById('apiNotice').classList.add('connected');
+    document.getElementById('apiNotice').classList.remove('offline');
+  } else {
+    setDot('error', 'API Offline');
+    document.getElementById('apiNotice').classList.add('offline');
+    document.getElementById('apiNotice').classList.remove('connected');
+  }
+}
+
+// ── API call — allorigins CORS proxy ─────────────────────────────────────
+// Streamlit Cloud doesn't send CORS headers, so we route via allorigins.win
+// which fetches the page server-side and returns it as JSON.
+// We then parse the JSON payload from the rendered HTML.
+async function callAPI(text, src, tgt) {
+  if (!apiUrl) return null;
+  const target = `${apiUrl}/?api=1&text=${encodeURIComponent(text)}&src=${encodeURIComponent(src)}&tgt=${encodeURIComponent(tgt)}`;
+  const proxy  = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+  try {
+    const res  = await fetch(proxy, { signal: AbortSignal.timeout(30000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const html = data.contents || '';
+
+    // Streamlit renders st.json() inside a stJson component — try several patterns:
+    // Pattern 1: raw JSON object in the HTML
+    let m = html.match(/\{\s*"translation"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"src"/);
+    if (m) return m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"');
+
+    // Pattern 2: JSON inside a <pre> tag (older Streamlit)
+    m = html.match(/<pre[^>]*>\s*(\{[^<]*"translation"[^<]*\})\s*<\/pre>/);
+    if (m) { try { return JSON.parse(m[1]).translation; } catch(e){} }
+
+    // Pattern 3: JSON inside stJson data attribute
+    m = html.match(/data-testid="stJson"[^>]*>([^<]+)</);
+    if (m) { try { return JSON.parse(m[1]).translation; } catch(e){} }
+
+    // Pattern 4: broader scan
+    m = html.match(/"translation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (m) return m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"');
+
+    return null;
+  } catch(e) {
+    console.warn('API error:', e.message);
+    return null;
+  }
+}
+
+// ── Translate ─────────────────────────────────────────────────────────────
+async function doTranslate() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) { toast('Please enter some text first.'); return; }
+
   const src = document.getElementById('srcLang').value;
   const tgt = document.getElementById('tgtLang').value;
-  showToast('↩ Back-translating…');
-  const back = apiUrl ? await callApi(out, tgt, src) : getDemoTranslation(out, tgt, src);
-  if (back) showToast(`Back: "${back}"`);
+  if (src === tgt) { toast('Source and target are the same!'); return; }
+
+  setLoading(true);
+  document.getElementById('backRow').style.display = 'none';
+
+  let result = null;
+
+  // 1. Try live API
+  if (apiUrl) result = await callAPI(text, src, tgt);
+
+  // 2. Fall back to demo dict
+  if (!result) {
+    result = demoLookup(text, src, tgt);
+    if (result && apiUrl) toast('⚠ API unreachable — showing demo result');
+    if (!result) {
+      if (!apiUrl) result = `[Configure your Streamlit URL to translate this]`;
+      else result = `[API may be waking up — try again in 30 seconds]`;
+    }
+  }
+
+  setLoading(false);
+  renderOutput(result);
+}
+
+// ── Back translate ────────────────────────────────────────────────────────
+async function checkBackTranslate() {
+  const out = document.getElementById('outText').textContent;
+  if (!out) { toast('Translate something first!'); return; }
+  const src = document.getElementById('srcLang').value;
+  const tgt = document.getElementById('tgtLang').value;
+  toast('Verifying…');
+  let back = apiUrl ? await callAPI(out, tgt, src) : null;
+  if (!back) back = demoLookup(out, tgt, src) || out;
+  document.getElementById('backText').textContent = back;
+  document.getElementById('backRow').style.display = 'block';
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+function renderOutput(text) {
+  const wrap = document.getElementById('outputWrap');
+  wrap.innerHTML = `<span id="outPlaceholder" style="display:none"></span><span id="outText">${escHtml(text)}</span>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('goBtn');
+  const lbl = document.getElementById('goLabel');
+  const spn = document.getElementById('goSpinner');
+  const wrap = document.getElementById('outputWrap');
+  btn.disabled = on;
+  lbl.style.display = on ? 'none' : '';
+  spn.style.display  = on ? 'block' : 'none';
+  if (on) {
+    wrap.innerHTML = '<div class="loading-row"><span></span><span></span><span></span></div>';
+  }
+}
+
+function swapLangs() {
+  const s = document.getElementById('srcLang');
+  const t = document.getElementById('tgtLang');
+  const prevOut = document.getElementById('outText')?.textContent || '';
+  [s.value, t.value] = [t.value, s.value];
+  if (prevOut) document.getElementById('inputText').value = prevOut;
+  renderOutput('');
+  document.getElementById('backRow').style.display = 'none';
+  updateLabels();
+}
+
+function onTyping() {
+  if (!document.getElementById('inputText').value) {
+    document.getElementById('outputWrap').innerHTML =
+      '<span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span><span id="outText"></span>';
+    document.getElementById('backRow').style.display = 'none';
+  }
+}
+
+function hotkey(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
 }
 
 function speakOut() {
-  const text = document.getElementById('outputText').textContent;
-  if (!text) return;
-  if (!('speechSynthesis' in window)) { showToast('Speech not supported'); return; }
-  const tgt = document.getElementById('tgtLang').value;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = {fr:'fr-FR',en:'en-US',hi:'hi-IN',gu:'gu-IN'}[tgt];
+  const t = document.getElementById('outText')?.textContent;
+  if (!t) { toast('Nothing to speak'); return; }
+  const u = new SpeechSynthesisUtterance(t);
+  u.lang = {fr:'fr-FR',en:'en-US',hi:'hi-IN',gu:'gu-IN'}[document.getElementById('tgtLang').value] || 'en-US';
+  speechSynthesis.cancel();
   speechSynthesis.speak(u);
-  showToast('🔊 Speaking…');
+  toast('🔊 Speaking…');
 }
 
 function copyOut() {
-  const text = document.getElementById('outputText').textContent;
-  if (!text) return;
-  navigator.clipboard?.writeText(text).then(() => showToast('📋 Copied!'));
+  const t = document.getElementById('outText')?.textContent;
+  if (!t) { toast('Nothing to copy'); return; }
+  navigator.clipboard?.writeText(t).then(() => toast('📋 Copied!'));
 }
 
 function clearAll() {
   document.getElementById('inputText').value = '';
-  document.getElementById('outputText').textContent = '';
-  document.getElementById('outputPlaceholder').style.display = '';
+  document.getElementById('outputWrap').innerHTML =
+    '<span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span><span id="outText"></span>';
+  document.getElementById('backRow').style.display = 'none';
 }
 
-function onInput() {
-  const text = document.getElementById('inputText').value;
-  if (!text) {
-    document.getElementById('outputText').textContent = '';
-    document.getElementById('outputPlaceholder').style.display = '';
-  }
-}
-
-function handleKey(e) {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
-}
-
-// ── Loading state ──────────────────────────────────────────────────────────
-function setLoading(on) {
-  const btn = document.getElementById('translateBtn');
-  const lbl = document.getElementById('btnLabel');
-  const spn = document.getElementById('btnSpinner');
-  const out = document.getElementById('outputArea');
-  btn.disabled = on;
-  lbl.style.display = on ? 'none' : '';
-  spn.style.display = on ? '' : 'none';
-  out.classList.toggle('loading', on);
-}
-
-// ── Modal ──────────────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────
 function openModal() {
-  document.getElementById('apiUrlInput').value = apiUrl;
+  document.getElementById('urlInput').value = apiUrl;
   document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('urlInput').focus(), 100);
 }
-function closeModal() {
-  document.getElementById('overlay').classList.remove('open');
-}
-function closeModalOutside(e) {
-  if (e.target === document.getElementById('overlay')) closeModal();
-}
-async function saveConfig() {
-  const val = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
-  if (!val) { showToast('Enter a URL.'); return; }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function bgClick(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+async function saveAndTest() {
+  let val = document.getElementById('urlInput').value.trim().replace(/\/+$/, '');
+  if (!val) { toast('Please enter a URL'); return; }
+  if (!val.startsWith('http')) { toast('URL must start with https://'); return; }
   apiUrl = val;
-  localStorage.setItem(STORAGE_KEY, apiUrl);
+  localStorage.setItem(STORE_KEY, apiUrl);
   closeModal();
-  updateApiDisplay();
-  showToast('✓ Saved — testing connection…');
-  await checkApiStatus();
+  updateNotice();
+  toast('Saved! Testing connection…');
+  await checkStatus();
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────────────
 let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ── Scroll reveal ──────────────────────────────────────────────────────────
-function initScrollReveal() {
+// ── Scroll reveal ─────────────────────────────────────────────────────────
+function setupReveal() {
   const obs = new IntersectionObserver(
-    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }),
+    es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }),
     { threshold: 0.1 }
   );
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 }
 
 init();
-</script>
-</body>
-</html> Feature</div>
-    <div class="section-title">Instant Text <em>Translation</em></div>
-    <div class="translator-card">
-      <div class="translator-header">
-        <div class="lang-selector">
-          <span style="font-size:0.8rem;color:var(--text-muted)">From</span>
-          <select class="lang-select" id="srcLang">
-            <option value="fr">🇫🇷 French</option>
-            <option value="hi">🇮🇳 Hindi</option>
-            <option value="gu">🇮🇳 Gujarati</option>
-            <option value="en">🇬🇧 English</option>
-          </select>
-        </div>
-        <button class="swap-btn" onclick="swapLanguages()" title="Swap languages">⇄</button>
-        <div class="lang-selector">
-          <span style="font-size:0.8rem;color:var(--text-muted)">To</span>
-          <select class="lang-select" id="tgtLang">
-            <option value="en">🇬🇧 English</option>
-            <option value="fr">🇫🇷 French</option>
-            <option value="hi">🇮🇳 Hindi</option>
-            <option value="gu">🇮🇳 Gujarati</option>
-          </select>
-        </div>
-      </div>
-      <div class="translator-body">
-        <div class="trans-pane">
-          <div class="pane-label" id="srcLabel">French</div>
-          <textarea id="inputText" placeholder="Type or paste text here…" oninput="handleInput()"></textarea>
-        </div>
-        <div class="trans-pane">
-          <div class="pane-label" id="tgtLabel">English</div>
-          <div class="output-text" id="outputText">Translation will appear here…</div>
-        </div>
-      </div>
-      <div class="translator-footer">
-        <div class="action-btns">
-          <button class="icon-btn" onclick="speakOutput()">🔊 Listen</button>
-          <button class="icon-btn" onclick="copyOutput()">📋 Copy</button>
-          <button class="icon-btn" onclick="clearAll()">🗑 Clear</button>
-          <button class="icon-btn" id="backTransBtn" onclick="backTranslate()">↩ Back-translate</button>
-        </div>
-        <button class="translate-btn" id="translateBtn" onclick="doTranslate()">
-          <span id="btnText">Translate</span>
-          <div class="spinner" id="btnSpinner"></div>
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section class="scroll-reveal">
-    <div class="section-label">Why LinguaFlow</div>
-    <div class="section-title">Everything You Need to <em>Communicate</em></div>
-    <div class="features-grid">
-      <div class="feature-card" style="--accent-c:var(--accent)">
-        <div class="feature-icon" style="background:rgba(124,92,252,0.15); color:var(--accent)">🎙️</div>
-        <h3>Real-Time Voice</h3>
-        <p>Speak naturally and get instant translations. Hands-free interaction powered by advanced speech recognition technology.</p>
-        <div class="feature-tags"><span class="tag">Voice-to-Text</span><span class="tag">Hands-Free</span></div>
-      </div>
-      <div class="feature-card" style="--accent-c:var(--accent2)">
-        <div class="feature-icon" style="background:rgba(252,92,156,0.15); color:var(--accent2)">📷</div>
-        <h3>Image Scanning</h3>
-        <p>Point your camera at any sign, menu, or document. OCR technology extracts and translates text from images instantly.</p>
-        <div class="feature-tags"><span class="tag" style="color:var(--accent2);border-color:rgba(252,92,156,0.2);background:rgba(252,92,156,0.1)">OCR</span><span class="tag" style="color:var(--accent2);border-color:rgba(252,92,156,0.2);background:rgba(252,92,156,0.1)">Real-World</span></div>
-      </div>
-      <div class="feature-card" style="--accent-c:var(--accent3)">
-        <div class="feature-icon" style="background:rgba(92,252,220,0.15); color:var(--accent3)">🤟</div>
-        <h3>Sign Language</h3>
-        <p>Breaking barriers for deaf and hard-of-hearing users with integrated sign language translation and visual communication tools.</p>
-        <div class="feature-tags"><span class="tag" style="color:var(--accent3);border-color:rgba(92,252,220,0.2);background:rgba(92,252,220,0.1)">ASL</span><span class="tag" style="color:var(--accent3);border-color:rgba(92,252,220,0.2);background:rgba(92,252,220,0.1)">Accessibility</span></div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(255,200,80,0.15); color:#ffc850">↩️</div>
-        <h3>Back-Translation</h3>
-        <p>Verify accuracy by translating back to the original language. Perfect for ensuring nuance and meaning are preserved.</p>
-        <div class="feature-tags"><span class="tag" style="color:#ffc850;border-color:rgba(255,200,80,0.2);background:rgba(255,200,80,0.08)">Quality Check</span></div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(80,220,120,0.12); color:#50dc78">🎨</div>
-        <h3>Custom Voice</h3>
-        <p>Choose between a soothing female voice or a commanding male voice. Personalize your translation experience.</p>
-        <div class="feature-tags"><span class="tag" style="color:#50dc78;border-color:rgba(80,220,120,0.2);background:rgba(80,220,120,0.08)">Personalized</span></div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(124,92,252,0.15); color:var(--accent)">⚡</div>
-        <h3>Always Free</h3>
-        <p>No subscriptions, no limits, no paywalls. LinguaFlow is committed to removing financial barriers to communication.</p>
-        <div class="feature-tags"><span class="tag">Unlimited</span><span class="tag">No Sign-Up</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- IMAGE SCAN -->
-  <section id="scan" class="scroll-reveal">
-    <div class="section-label">Image Translation</div>
-    <div class="section-title">Scan, Extract & <em>Translate</em></div>
-    <div class="scan-area" id="scanArea" onclick="document.getElementById('fileInput').click()"
-      ondragover="event.preventDefault();this.classList.add('drag-over')"
-      ondragleave="this.classList.remove('drag-over')"
-      ondrop="handleDrop(event)">
-      <div class="scan-icon">📸</div>
-      <h3>Drop an image or click to upload</h3>
-      <p>Supports JPG, PNG, WEBP · Menus, signs, documents, books</p>
-      <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)"/>
-    </div>
-    <div class="scan-preview" id="scanPreview">
-      <img id="scanImg" src="" alt="Uploaded image"/>
-    </div>
-    <div class="scan-result" id="scanResult">
-      <div class="scan-result-label">📝 Extracted Text (OCR simulation)</div>
-      <div id="extractedText" style="margin-bottom:1rem; line-height:1.6;"></div>
-      <div class="scan-result-label" style="color:var(--accent)">🌐 Translated Text</div>
-      <div id="translatedExtract" style="line-height:1.6; font-style:italic;"></div>
-    </div>
-  </section>
-
-  <!-- VOICE -->
-  <section id="voice" class="scroll-reveal">
-    <div class="section-label">Voice Commands</div>
-    <div class="section-title">Speak, and the World <em>Understands</em></div>
-    <div class="voice-panel">
-      <div class="voice-info">
-        <h3>Hands-Free Translation</h3>
-        <p>Simply speak and LinguaFlow will detect, transcribe, and translate your words in real-time. Perfect for travel, meetings, and everyday conversations.</p>
-        <div class="voice-options">
-          <div class="voice-opt selected" id="voiceFemale" onclick="selectVoice('female')">
-            <div class="v-icon">👩</div>
-            <span>Soothing</span>
-            <small>Female voice</small>
-          </div>
-          <div class="voice-opt" id="voiceMale" onclick="selectVoice('male')">
-            <div class="v-icon">👨</div>
-            <span>Commanding</span>
-            <small>Male voice</small>
-          </div>
-        </div>
-      </div>
-      <div class="mic-visual">
-        <div class="mic-btn-wrapper" id="micWrapper">
-          <div class="mic-ripple"></div>
-          <div class="mic-ripple"></div>
-          <div class="mic-ripple"></div>
-          <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎙️</button>
-        </div>
-        <div class="mic-status" id="micStatus">Click to start speaking</div>
-        <div class="voice-transcript" id="voiceTranscript">Your words will appear here…</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SIGN LANGUAGE -->
-  <section id="sign" class="scroll-reveal">
-    <div class="section-label">Accessibility</div>
-    <div class="section-title">Sign Language <em>Integration</em></div>
-    <p style="color:var(--text-muted); margin-bottom:2rem; max-width:600px; line-height:1.7;">
-      LinguaFlow ensures everyone can communicate. Our sign language tools help bridge the gap for deaf and hard-of-hearing users with visual translation assistance.
-    </p>
-    <div class="sign-grid">
-      <div class="sign-card">
-        <div class="sign-emoji">🤟</div>
-        <h4>I Love You</h4>
-        <p>"Je t'aime" · "मैं तुमसे प्यार करता हूँ"</p>
-      </div>
-      <div class="sign-card">
-        <div class="sign-emoji">👋</div>
-        <h4>Hello</h4>
-        <p>"Bonjour" · "नमस्ते" · "નમસ્તે"</p>
-      </div>
-      <div class="sign-card">
-        <div class="sign-emoji">🙏</div>
-        <h4>Thank You</h4>
-        <p>"Merci" · "धन्यवाद" · "આભાર"</p>
-      </div>
-      <div class="sign-card">
-        <div class="sign-emoji">✋</div>
-        <h4>Stop / Wait</h4>
-        <p>"Arrêtez" · "रुको" · "થોભો"</p>
-      </div>
-      <div class="sign-card">
-        <div class="sign-emoji">👍</div>
-        <h4>Yes / Good</h4>
-        <p>"Oui" · "हाँ" · "હા"</p>
-      </div>
-      <div class="sign-card">
-        <div class="sign-emoji">❓</div>
-        <h4>Question</h4>
-        <p>"Question" · "प्रश्न" · "પ્રશ્ન"</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- FREE -->
-  <section class="scroll-reveal" style="padding:0 2rem;">
-    <div class="free-section">
-      <div class="free-pill">100% Free Forever</div>
-      <h2>Language Should Never Cost Money</h2>
-      <p>LinguaFlow removes every financial barrier. Unlimited translations, all features, zero paywalls — because communication is a human right.</p>
-      <div class="free-features">
-        <div class="free-feat">Unlimited text translations</div>
-        <div class="free-feat">Voice recognition</div>
-        <div class="free-feat">Image scanning</div>
-        <div class="free-feat">Sign language tools</div>
-        <div class="free-feat">No account required</div>
-      </div>
-      <button class="btn-primary" onclick="document.getElementById('translate').scrollIntoView({behavior:'smooth'})">Start Translating Now</button>
-    </div>
-  </section>
-
-</main>
-
-<footer>
-  <div class="logo" style="font-size:1rem;">LinguaFlow</div>
-  <div>Built on Seq2Seq Neural Architecture · <a href="https://github.com/paradise-007/French-To-English-Translation-NLP" target="_blank">GitHub ↗</a></div>
-  <div>© 2025 LinguaFlow · Free for everyone</div>
-</footer>
-
-<div class="toast" id="toast"></div>
-
-<script>
-// ─── LANGUAGE METADATA ─────────────────────────────────────────────────────
-const langNames = { en:'English', fr:'French', hi:'Hindi', gu:'Gujarati' };
-
-// Demo translations (simulate model output)
-const demoTranslations = {
-  'fr→en': {
-    'je me sens affreusement mal': 'I feel terrible',
-    'je pense que je peux arranger ca': 'I think I can fix this',
-    'bonjour': 'Hello',
-    'merci beaucoup': 'Thank you very much',
-    'comment allez vous': 'How are you',
-    'je suis etudiant': 'I am a student',
-    'bonne journee': 'Have a good day',
-    "l'inde a remporte le match": 'India won the match',
-  },
-  'en→fr': {
-    'hello': 'Bonjour',
-    'how are you': 'Comment allez-vous',
-    'thank you': 'Merci',
-    'i love you': 'Je t\'aime',
-    'good morning': 'Bonjour',
-    'i am happy': 'Je suis heureux',
-  },
-  'hi→en': {
-    'नमस्ते': 'Hello',
-    'आप कैसे हैं': 'How are you',
-    'धन्यवाद': 'Thank you',
-    'मैं ठीक हूँ': 'I am fine',
-  },
-  'gu→en': {
-    'નમસ્તે': 'Hello',
-    'આભાર': 'Thank you',
-    'તમે કેम छो': 'How are you',
-  }
-};
-
-function normalize(str) {
-  return str.toLowerCase().trim()
-    .replace(/[àâä]/g,'a').replace(/[éèêë]/g,'e')
-    .replace(/[îï]/g,'i').replace(/[ôö]/g,'o')
-    .replace(/[ùûü]/g,'u').replace(/ç/g,'c')
-    .replace(/[^a-z\u0900-\u097f\u0a80-\u0aff\s]/g,'');
-}
-
-function getTranslation(text, src, tgt) {
-  const key = `${src}→${tgt}`;
-  const map = demoTranslations[key] || {};
-  const norm = normalize(text);
-  for (const [k, v] of Object.entries(map)) {
-    if (normalize(k) === norm) return v;
-  }
-  // Partial match
-  for (const [k, v] of Object.entries(map)) {
-    if (norm.includes(normalize(k))) return v + '…';
-  }
-  // Fallback
-  const fallbacks = {
-    'fr→en': `[EN] ${text}`,
-    'en→fr': `[FR] ${text}`,
-    'hi→en': `[EN] ${text}`,
-    'gu→en': `[EN] ${text}`,
-  };
-  return fallbacks[key] || `[${tgt.toUpperCase()}] ${text}`;
-}
-
-// ─── TRANSLATE ──────────────────────────────────────────────────────────────
-function updateLangLabels() {
-  const src = document.getElementById('srcLang').value;
-  const tgt = document.getElementById('tgtLang').value;
-  document.getElementById('srcLabel').textContent = langNames[src];
-  document.getElementById('tgtLabel').textContent = langNames[tgt];
-}
-document.getElementById('srcLang').addEventListener('change', updateLangLabels);
-document.getElementById('tgtLang').addEventListener('change', updateLangLabels);
-
-function swapLanguages() {
-  const sl = document.getElementById('srcLang');
-  const tl = document.getElementById('tgtLang');
-  [sl.value, tl.value] = [tl.value, sl.value];
-  // swap text too
-  const inp = document.getElementById('inputText');
-  const out = document.getElementById('outputText');
-  if (out.textContent && out.textContent !== 'Translation will appear here…') {
-    inp.value = out.textContent;
-    out.textContent = 'Translation will appear here…';
-  }
-  updateLangLabels();
-}
-
-function handleInput() {
-  const text = document.getElementById('inputText').value;
-  if (!text.trim()) {
-    document.getElementById('outputText').textContent = 'Translation will appear here…';
-  }
-}
-
-async function doTranslate() {
-  const text = document.getElementById('inputText').value.trim();
-  if (!text) { showToast('Please enter some text first.'); return; }
-
-  const src = document.getElementById('srcLang').value;
-  const tgt = document.getElementById('tgtLang').value;
-  if (src === tgt) { showToast('Source and target languages are the same.'); return; }
-
-  const btn = document.getElementById('translateBtn');
-  const btnText = document.getElementById('btnText');
-  const spinner = document.getElementById('btnSpinner');
-  btn.disabled = true;
-  btnText.style.display = 'none';
-  spinner.style.display = 'inline-block';
-
-  await sleep(600 + Math.random() * 400);
-
-  const result = getTranslation(text, src, tgt);
-  document.getElementById('outputText').textContent = result;
-
-  btn.disabled = false;
-  btnText.style.display = 'inline';
-  spinner.style.display = 'none';
-  showToast('✓ Translation complete');
-}
-
-async function backTranslate() {
-  const out = document.getElementById('outputText').textContent;
-  if (!out || out === 'Translation will appear here…') { showToast('Translate something first.'); return; }
-  const src = document.getElementById('srcLang').value;
-  const tgt = document.getElementById('tgtLang').value;
-  showToast('↩ Back-translating…');
-  await sleep(700);
-  const back = getTranslation(out, tgt, src);
-  document.getElementById('outputText').textContent += `\n\n[Back-translation: ${back}]`;
-}
-
-function speakOutput() {
-  const text = document.getElementById('outputText').textContent;
-  if (!text || text === 'Translation will appear here…') return;
-  if ('speechSynthesis' in window) {
-    const utter = new SpeechSynthesisUtterance(text);
-    const tgt = document.getElementById('tgtLang').value;
-    utter.lang = tgt === 'fr' ? 'fr-FR' : tgt === 'hi' ? 'hi-IN' : tgt === 'gu' ? 'gu-IN' : 'en-US';
-    utter.rate = 0.9;
-    if (selectedVoice === 'female') utter.pitch = 1.2;
-    else utter.pitch = 0.8;
-    speechSynthesis.speak(utter);
-    showToast('🔊 Speaking translation…');
-  } else {
-    showToast('Speech not supported in this browser');
-  }
-}
-
-function copyOutput() {
-  const text = document.getElementById('outputText').textContent;
-  if (!text || text === 'Translation will appear here…') return;
-  navigator.clipboard?.writeText(text).then(() => showToast('📋 Copied to clipboard'));
-}
-
-function clearAll() {
-  document.getElementById('inputText').value = '';
-  document.getElementById('outputText').textContent = 'Translation will appear here…';
-}
-
-// ─── IMAGE SCAN ─────────────────────────────────────────────────────────────
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('scanArea').classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type.startsWith('image/')) processImage(file);
-}
-
-function handleImageUpload(event) {
-  const file = event.target.files[0];
-  if (file) processImage(file);
-}
-
-async function processImage(file) {
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const preview = document.getElementById('scanPreview');
-    const img = document.getElementById('scanImg');
-    img.src = e.target.result;
-    preview.style.display = 'block';
-
-    showToast('🔍 Scanning image…');
-    await sleep(1200);
-
-    const sampleTexts = [
-      "L'Inde a remporté le match",
-      "Bonjour, comment allez-vous?",
-      "Je suis très content aujourd'hui",
-      "Le restaurant est fermé le lundi",
-      "Bienvenue à Paris"
-    ];
-    const extracted = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
-    const translated = getTranslation(extracted, 'fr', 'en');
-
-    document.getElementById('extractedText').textContent = extracted;
-    document.getElementById('translatedExtract').textContent = translated || '[Translated] ' + extracted;
-
-    const resultEl = document.getElementById('scanResult');
-    resultEl.style.display = 'block';
-    showToast('✓ Image scanned successfully');
-  };
-  reader.readAsDataURL(file);
-}
-
-// ─── VOICE ──────────────────────────────────────────────────────────────────
-let isRecording = false;
-let selectedVoice = 'female';
-let recognition = null;
-
-function selectVoice(type) {
-  selectedVoice = type;
-  document.getElementById('voiceFemale').classList.toggle('selected', type === 'female');
-  document.getElementById('voiceMale').classList.toggle('selected', type === 'male');
-  showToast(`${type === 'female' ? '👩 Soothing female' : '👨 Commanding male'} voice selected`);
-}
-
-function toggleMic() {
-  if (!isRecording) startRecording();
-  else stopRecording();
-}
-
-function startRecording() {
-  isRecording = true;
-  document.getElementById('micWrapper').classList.add('recording');
-  document.getElementById('micBtn').textContent = '⏹️';
-  document.getElementById('micStatus').textContent = 'Listening…';
-  document.getElementById('voiceTranscript').textContent = '…';
-
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    const src = document.getElementById('srcLang').value;
-    recognition.lang = src === 'fr' ? 'fr-FR' : src === 'hi' ? 'hi-IN' : src === 'gu' ? 'gu-IN' : 'en-US';
-
-    recognition.onresult = (e) => {
-      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-      document.getElementById('voiceTranscript').textContent = transcript;
-      if (e.results[0].isFinal) {
-        document.getElementById('inputText').value = transcript;
-        stopRecording();
-        setTimeout(doTranslate, 300);
-      }
-    };
-    recognition.onerror = () => stopRecording();
-    recognition.onend = () => stopRecording();
-    recognition.start();
-  } else {
-    // Simulate
-    const demos = ['je me sens affreusement mal', 'bonjour', 'merci beaucoup', 'je pense que je peux arranger ca'];
-    setTimeout(() => {
-      const demo = demos[Math.floor(Math.random() * demos.length)];
-      document.getElementById('voiceTranscript').textContent = demo;
-      document.getElementById('inputText').value = demo;
-      stopRecording();
-      setTimeout(doTranslate, 300);
-    }, 2000);
-  }
-}
-
-function stopRecording() {
-  isRecording = false;
-  recognition?.stop();
-  document.getElementById('micWrapper').classList.remove('recording');
-  document.getElementById('micBtn').textContent = '🎙️';
-  document.getElementById('micStatus').textContent = 'Click to start speaking';
-}
-
-// ─── UTILS ───────────────────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ─── SCROLL REVEAL ───────────────────────────────────────────────────────────
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 </script>
 </body>
 </html>
