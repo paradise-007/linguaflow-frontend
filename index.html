@@ -8,444 +8,226 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#09090f;
-  --surface:#111118;
-  --surface2:#18181f;
-  --border:#2a2a35;
-  --ink:#f0eff8;
-  --muted:#6b6a7a;
-  --soft:#a09fb5;
-  --accent:#6c63ff;
-  --accent-glow:rgba(108,99,255,.25);
-  --green:#22d472;
-  --red:#ff5c5c;
-  --amber:#fbbf24;
+  --bg:#09090f;--surface:#111118;--surface2:#18181f;
+  --border:#2a2a35;--ink:#f0eff8;--muted:#6b6a7a;--soft:#a09fb5;
+  --accent:#6c63ff;--green:#22d472;--red:#ff5c5c;--amber:#fbbf24;
 }
 html{scroll-behavior:smooth}
-body{
-  background:var(--bg);color:var(--ink);
-  font-family:'Instrument Sans',sans-serif;
-  min-height:100vh;overflow-x:hidden;
-}
-
-/* ── Noise grain overlay ─────────────────────────────── */
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+body{background:var(--bg);color:var(--ink);font-family:'Instrument Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
-  background-size:200px 200px;opacity:.4;
-}
+  background-size:200px 200px;opacity:.4;}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(108,99,255,.1) 0%,transparent 70%);
+  pointer-events:none;z-index:0;top:-200px;right:-200px;
+  animation:orb-drift 12s ease-in-out infinite alternate;}
+@keyframes orb-drift{from{transform:translate(0,0)}to{transform:translate(-60px,60px)}}
 
-/* ── Ambient glow ────────────────────────────────────── */
-.glow-orb{
-  position:fixed;width:600px;height:600px;border-radius:50%;
-  background:radial-gradient(circle, rgba(108,99,255,.12) 0%, transparent 70%);
-  pointer-events:none;z-index:0;
-  top:-200px;right:-200px;
-  animation:orb-drift 12s ease-in-out infinite alternate;
-}
-@keyframes orb-drift{
-  from{transform:translate(0,0)}
-  to{transform:translate(-60px,60px)}
-}
-
-/* ── Nav ─────────────────────────────────────────────── */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:50;
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
-  padding:.85rem 2rem;
-  background:rgba(9,9,15,.8);
-  backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-}
-.logo{
-  font-family:'Syne',sans-serif;
-  font-size:1.2rem;font-weight:800;
-  letter-spacing:-.03em;color:var(--ink);
-}
+  padding:.85rem 2rem;background:rgba(9,9,15,.85);
+  backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:-.03em;}
 .logo span{color:var(--accent);}
 .nav-links{display:flex;gap:1.5rem;align-items:center;}
-.nav-links a{
-  color:var(--muted);text-decoration:none;
-  font-size:.82rem;font-weight:500;
-  transition:color .2s;letter-spacing:.01em;
-}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.82rem;font-weight:500;transition:color .2s;}
 .nav-links a:hover{color:var(--ink);}
-
-/* status pill */
-.status-pill{
-  display:flex;align-items:center;gap:.5rem;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:100px;padding:.3rem .9rem .3rem .55rem;
-  font-size:.75rem;font-weight:600;
-  color:var(--soft);cursor:pointer;
-  transition:border-color .2s;
-  letter-spacing:.02em;
-}
+.status-pill{display:flex;align-items:center;gap:.5rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:100px;padding:.3rem .9rem .3rem .55rem;
+  font-size:.75rem;font-weight:600;color:var(--soft);cursor:pointer;transition:border-color .2s;}
 .status-pill:hover{border-color:var(--accent);}
-.dot{
-  width:7px;height:7px;border-radius:50%;flex-shrink:0;
-  background:var(--muted);transition:background .4s,box-shadow .4s;
-}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--muted);transition:all .4s;}
 .dot.online{background:var(--green);box-shadow:0 0 0 3px rgba(34,212,114,.2);}
 .dot.error{background:var(--red);box-shadow:0 0 0 3px rgba(255,92,92,.2);}
 .dot.checking{background:var(--amber);animation:blink .9s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* ── Hero ────────────────────────────────────────────── */
-.hero{
-  position:relative;z-index:1;
-  padding:7.5rem 2rem 4rem;
-  text-align:center;
-}
-.eyebrow{
-  display:inline-flex;align-items:center;gap:.5rem;
-  font-size:.68rem;font-weight:600;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--accent);
-  border:1px solid rgba(108,99,255,.3);
-  background:rgba(108,99,255,.06);
-  border-radius:100px;padding:.3rem .9rem;
-  margin-bottom:1.8rem;
-  animation:fade-up .6s ease both;
-}
-.eyebrow::before{content:'◆';font-size:.5rem;}
-h1{
-  font-family:'Syne',sans-serif;
-  font-size:clamp(2.8rem,7vw,5.5rem);
-  font-weight:800;line-height:1;
-  letter-spacing:-.04em;
-  animation:fade-up .6s .07s ease both;
-}
-h1 .grad{
-  background:linear-gradient(135deg,#a78bfa,#6c63ff,#38bdf8);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-.hero-sub{
-  max-width:420px;margin:1.4rem auto 0;
-  color:var(--soft);font-size:.98rem;line-height:1.75;
-  animation:fade-up .6s .14s ease both;
-}
-.lang-badges{
-  display:flex;flex-wrap:wrap;gap:.5rem;
-  justify-content:center;margin-top:2rem;
-  animation:fade-up .6s .2s ease both;
-}
-.badge{
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:8px;padding:.28rem .75rem;
-  font-size:.78rem;color:var(--soft);
-  transition:all .2s;
-}
+/* HERO */
+.hero{position:relative;z-index:1;padding:7.5rem 2rem 4rem;text-align:center;}
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.68rem;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--accent);
+  border:1px solid rgba(108,99,255,.3);background:rgba(108,99,255,.06);
+  border-radius:100px;padding:.3rem .9rem;margin-bottom:1.8rem;
+  animation:fade-up .6s ease both;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:800;
+  line-height:1;letter-spacing:-.04em;animation:fade-up .6s .07s ease both;}
+h1 .grad{background:linear-gradient(135deg,#a78bfa,#6c63ff,#38bdf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{max-width:420px;margin:1.4rem auto 0;color:var(--soft);font-size:.98rem;line-height:1.75;
+  animation:fade-up .6s .14s ease both;}
+.lang-badges{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;
+  margin-top:2rem;animation:fade-up .6s .2s ease both;}
+.badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .75rem;font-size:.78rem;color:var(--soft);transition:all .2s;}
 .badge:hover{border-color:var(--accent);color:var(--accent);}
 
-/* ── Page wrapper ────────────────────────────────────── */
+/* PAGE */
 .page{max-width:860px;margin:0 auto;padding:0 1.5rem 6rem;position:relative;z-index:1;}
-
-/* ── Section head ────────────────────────────────────── */
 .sh{margin-bottom:1.5rem;}
-.sh-kicker{
-  font-size:.67rem;font-weight:600;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;
-}
-.sh-title{
-  font-family:'Syne',sans-serif;
-  font-size:clamp(1.5rem,3vw,2rem);
-  font-weight:800;letter-spacing:-.03em;
-}
+.sh-kicker{font-size:.67rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.sh-title{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,3vw,2rem);font-weight:800;letter-spacing:-.03em;}
 .sh-title em{font-style:italic;color:var(--soft);font-weight:400;}
 
-/* ── API Notice ──────────────────────────────────────── */
-.api-notice{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;padding:1.25rem 1.5rem;
-  display:flex;align-items:flex-start;
-  justify-content:space-between;gap:1.2rem;
-  flex-wrap:wrap;margin-bottom:1.5rem;
-  transition:border-color .2s;
-}
-.api-notice.connected{border-color:rgba(34,212,114,.3);}
-.api-notice.offline{border-color:rgba(255,92,92,.2);}
-.notice-left h4{
-  font-size:.88rem;font-weight:600;
-  margin-bottom:.25rem;
-}
-.notice-left p{
-  font-size:.78rem;color:var(--muted);
-  line-height:1.6;
-}
-.notice-url{
-  font-family:monospace;font-size:.72rem;
-  color:var(--green);margin-top:.4rem;word-break:break-all;
-}
-.btn-cfg{
-  background:var(--accent);color:white;border:none;
-  border-radius:9px;padding:.45rem 1.1rem;
-  font-family:'Instrument Sans',sans-serif;
-  font-size:.8rem;font-weight:600;cursor:pointer;
-  white-space:nowrap;flex-shrink:0;
-  transition:opacity .2s,transform .15s;
-}
+/* API NOTICE */
+.api-notice{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:1.25rem 1.5rem;display:flex;align-items:flex-start;justify-content:space-between;
+  gap:1.2rem;flex-wrap:wrap;margin-bottom:1.5rem;transition:border-color .3s;}
+.api-notice.connected{border-color:rgba(34,212,114,.35);}
+.api-notice.error-state{border-color:rgba(255,92,92,.25);}
+.notice-left h4{font-size:.88rem;font-weight:600;margin-bottom:.25rem;}
+.notice-left p{font-size:.78rem;color:var(--muted);line-height:1.6;}
+.notice-url{font-family:monospace;font-size:.7rem;color:var(--green);margin-top:.4rem;word-break:break-all;}
+.btn-cfg{background:var(--accent);color:white;border:none;border-radius:9px;
+  padding:.45rem 1.1rem;font-family:'Instrument Sans',sans-serif;font-size:.8rem;
+  font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity .2s,transform .15s;}
 .btn-cfg:hover{opacity:.85;transform:translateY(-1px);}
 
-/* ── Translator card ─────────────────────────────────── */
-.tcard{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:20px;overflow:hidden;
-}
-
-/* lang bar */
-.lang-bar{
-  display:flex;align-items:center;
-  padding:1rem 1.25rem;gap:.75rem;
-  background:var(--surface2);
-  border-bottom:1px solid var(--border);
-  flex-wrap:wrap;
-}
+/* CARD */
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.lang-bar{display:flex;align-items:center;padding:1rem 1.25rem;gap:.75rem;
+  background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
 .lang-group{display:flex;align-items:center;gap:.5rem;min-width:0;}
-.lang-group label{
-  font-size:.67rem;font-weight:600;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--muted);white-space:nowrap;
-}
-select{
-  background:var(--bg);color:var(--ink);
-  border:1px solid var(--border);border-radius:8px;
-  padding:.38rem 2rem .38rem .7rem;
-  font-family:'Instrument Sans',sans-serif;font-size:.85rem;
-  cursor:pointer;outline:none;
+.lang-group label{font-size:.67rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+select{background:var(--bg);color:var(--ink);border:1px solid var(--border);
+  border-radius:8px;padding:.38rem 2rem .38rem .7rem;
+  font-family:'Instrument Sans',sans-serif;font-size:.85rem;cursor:pointer;outline:none;
   -webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6a7a'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right .55rem center;
-  transition:border-color .2s;
-}
+  background-repeat:no-repeat;background-position:right .55rem center;transition:border-color .2s;}
 select:focus{border-color:var(--accent);}
 .spacer{flex:1;}
-.swap-btn{
-  background:var(--bg);border:1px solid var(--border);
-  color:var(--muted);border-radius:8px;
-  width:34px;height:34px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:1rem;
-  transition:all .25s;
-}
+.swap-btn{background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:8px;
+  width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:1rem;transition:all .25s;}
 .swap-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(180deg);}
+.hint-tip{font-size:.68rem;color:var(--muted);}
 
-/* panels */
-.panels{display:grid;grid-template-columns:1fr 1fr;}
-.panel{display:flex;flex-direction:column;padding:1.2rem 1.25rem;}
+/* PANELS — key fix: equal height, no overflow */
+.panels{display:grid;grid-template-columns:1fr 1fr;align-items:stretch;}
+.panel{display:flex;flex-direction:column;padding:1.2rem 1.25rem;min-height:200px;}
 .panel:first-child{border-right:1px solid var(--border);}
-.panel-lbl{
-  font-size:.65rem;font-weight:600;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;
-}
-textarea{
-  flex:1;background:transparent;border:none;outline:none;
-  color:var(--ink);font-family:'Instrument Sans',sans-serif;
-  font-size:.97rem;resize:none;min-height:155px;line-height:1.7;
-}
+.panel-lbl{font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;flex-shrink:0;}
+textarea{flex:1;background:transparent;border:none;outline:none;color:var(--ink);
+  font-family:'Instrument Sans',sans-serif;font-size:.97rem;resize:none;
+  line-height:1.7;min-height:150px;width:100%;}
 textarea::placeholder{color:var(--muted);}
-.output-wrap{
-  min-height:155px;font-size:.97rem;
-  line-height:1.7;position:relative;
-}
-.out-placeholder{color:var(--muted);font-style:italic;}
-.loading-row{display:flex;gap:5px;align-items:center;padding-top:4px;}
-.loading-row span{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--accent);
-  animation:ld .8s infinite ease-in-out;
-}
+.output-wrap{flex:1;font-size:.97rem;line-height:1.7;min-height:150px;position:relative;}
+.out-ph{color:var(--muted);font-style:italic;}
+.loading-row{display:flex;gap:5px;align-items:center;padding-top:6px;}
+.loading-row span{width:6px;height:6px;border-radius:50%;background:var(--accent);
+  animation:ld .8s infinite ease-in-out;}
 .loading-row span:nth-child(2){animation-delay:.15s;}
 .loading-row span:nth-child(3){animation-delay:.3s;}
 @keyframes ld{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
 
-/* action bar */
-.action-bar{
-  display:flex;align-items:center;justify-content:space-between;
+/* ACTION BAR */
+.action-bar{display:flex;align-items:center;justify-content:space-between;
   padding:.9rem 1.25rem;gap:.6rem;flex-wrap:wrap;
-  background:var(--surface2);border-top:1px solid var(--border);
-}
+  background:var(--surface2);border-top:1px solid var(--border);}
 .icon-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
-.ibtn{
-  background:var(--bg);border:1px solid var(--border);
-  color:var(--muted);border-radius:7px;
-  padding:.3rem .7rem;font-size:.75rem;
-  display:flex;align-items:center;gap:.25rem;
-  cursor:pointer;font-family:'Instrument Sans',sans-serif;
-  transition:all .2s;
-}
+.ibtn{background:var(--bg);border:1px solid var(--border);color:var(--muted);
+  border-radius:7px;padding:.3rem .7rem;font-size:.75rem;
+  display:flex;align-items:center;gap:.25rem;cursor:pointer;
+  font-family:'Instrument Sans',sans-serif;transition:all .2s;}
 .ibtn:hover{border-color:var(--accent);color:var(--accent);}
-.btn-go{
-  background:var(--accent);color:white;border:none;
-  border-radius:10px;padding:.5rem 1.4rem;
-  font-family:'Instrument Sans',sans-serif;
+.btn-go{background:var(--accent);color:white;border:none;border-radius:10px;
+  padding:.5rem 1.4rem;font-family:'Instrument Sans',sans-serif;
   font-size:.88rem;font-weight:600;cursor:pointer;
-  display:flex;align-items:center;gap:.4rem;
-  transition:opacity .2s,transform .15s;
-}
+  display:flex;align-items:center;gap:.4rem;transition:opacity .2s,transform .15s;}
 .btn-go:hover:not(:disabled){opacity:.85;transform:translateY(-1px);}
 .btn-go:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.spinner{
-  width:13px;height:13px;
-  border:2px solid rgba(255,255,255,.3);
-  border-top-color:white;border-radius:50%;
-  animation:spin .7s linear infinite;display:none;
-}
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:none;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* back-translate */
-.back-row{
-  display:none;margin-top:.8rem;
-  background:rgba(34,212,114,.06);
-  border:1px solid rgba(34,212,114,.2);
-  border-radius:12px;padding:.85rem 1.1rem;
-  font-size:.85rem;color:var(--green);line-height:1.65;
-}
+/* BACK ROW */
+.back-row{display:none;margin-top:.8rem;background:rgba(34,212,114,.06);
+  border:1px solid rgba(34,212,114,.2);border-radius:12px;padding:.85rem 1.1rem;
+  font-size:.85rem;color:var(--green);line-height:1.65;}
 .back-row strong{font-weight:600;opacity:.7;}
 
-/* ── Steps grid ──────────────────────────────────────── */
-.steps{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:1rem;
-}
-.step{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:14px;padding:1.35rem;
-  transition:border-color .25s,transform .25s;
-}
+/* STEPS */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:1.35rem;transition:border-color .25s,transform .25s;}
 .step:hover{border-color:var(--accent);transform:translateY(-3px);}
-.step-n{
-  font-family:'Syne',sans-serif;
-  font-size:1.8rem;font-weight:800;
-  color:var(--accent);line-height:1;opacity:.6;margin-bottom:.5rem;
-}
+.step-n{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;
+  color:var(--accent);line-height:1;opacity:.6;margin-bottom:.5rem;}
 .step h4{font-size:.9rem;font-weight:600;margin-bottom:.3rem;}
 .step p{font-size:.78rem;color:var(--muted);line-height:1.6;}
-.step code{
-  display:inline-block;margin-top:.5rem;
-  background:var(--bg);border-radius:5px;
-  padding:.2rem .5rem;font-size:.72rem;
-  color:var(--soft);font-family:monospace;
-}
+.step code{display:inline-block;margin-top:.5rem;background:var(--bg);border-radius:5px;
+  padding:.2rem .5rem;font-size:.72rem;color:var(--soft);font-family:monospace;}
 
-/* ── Modal ───────────────────────────────────────────── */
-.overlay{
-  display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.7);
-  backdrop-filter:blur(8px);
-  align-items:center;justify-content:center;padding:1rem;
-}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1rem;}
 .overlay.open{display:flex;}
-.modal{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:20px;padding:2rem;
-  width:min(480px,100%);
-  box-shadow:0 24px 80px rgba(0,0,0,.5);
-  animation:modal-in .25s ease both;
-}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:2rem;width:min(500px,100%);box-shadow:0 24px 80px rgba(0,0,0,.6);
+  animation:modal-in .25s ease both;}
 @keyframes modal-in{from{opacity:0;transform:scale(.96) translateY(8px)}}
-.modal h3{
-  font-family:'Syne',sans-serif;font-size:1.15rem;
-  font-weight:800;margin-bottom:1rem;
-}
-.modal-hint{
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:10px;padding:.75rem 1rem;
-  font-size:.78rem;color:var(--muted);
-  line-height:1.65;margin-bottom:1.2rem;
-}
-.modal-hint code{
-  color:var(--soft);font-family:monospace;font-size:.75rem;
-}
-.modal label{
-  display:block;font-size:.7rem;font-weight:600;
-  letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:.4rem;
-}
-.modal input{
-  width:100%;background:var(--bg);color:var(--ink);
-  border:1px solid var(--border);border-radius:9px;
-  padding:.55rem .9rem;font-family:'Instrument Sans',sans-serif;
-  font-size:.88rem;outline:none;margin-bottom:1.25rem;
-  transition:border-color .2s;
-}
+.modal h3{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:1rem;}
+.modal-hint{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:.85rem 1rem;font-size:.78rem;color:var(--muted);line-height:1.7;margin-bottom:1.2rem;}
+.modal-hint code{color:var(--soft);font-family:monospace;font-size:.73rem;word-break:break-all;}
+.modal label{display:block;font-size:.7rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+.modal input{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--border);
+  border-radius:9px;padding:.55rem .9rem;font-family:'Instrument Sans',sans-serif;
+  font-size:.88rem;outline:none;margin-bottom:1.25rem;transition:border-color .2s;}
 .modal input:focus{border-color:var(--accent);}
 .modal-foot{display:flex;gap:.6rem;justify-content:flex-end;}
-.btn-cancel{
-  background:transparent;border:1px solid var(--border);
-  color:var(--muted);border-radius:9px;
-  padding:.48rem 1.2rem;cursor:pointer;
-  font-family:'Instrument Sans',sans-serif;font-size:.85rem;
-  transition:border-color .2s;
-}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);
+  border-radius:9px;padding:.48rem 1.2rem;cursor:pointer;
+  font-family:'Instrument Sans',sans-serif;font-size:.85rem;transition:all .2s;}
 .btn-cancel:hover{border-color:var(--ink);color:var(--ink);}
-.btn-save{
-  background:var(--accent);color:white;border:none;
-  border-radius:9px;padding:.48rem 1.4rem;
-  font-family:'Instrument Sans',sans-serif;
-  font-size:.85rem;font-weight:600;cursor:pointer;
-  transition:opacity .2s;
-}
+.btn-save{background:var(--accent);color:white;border:none;border-radius:9px;
+  padding:.48rem 1.4rem;font-family:'Instrument Sans',sans-serif;
+  font-size:.85rem;font-weight:600;cursor:pointer;transition:opacity .2s;}
 .btn-save:hover{opacity:.85;}
 
-/* ── Toast ───────────────────────────────────────────── */
-.toast{
-  position:fixed;bottom:1.5rem;left:50%;
-  transform:translateX(-50%) translateY(70px);
-  background:var(--ink);color:var(--bg);
-  border-radius:100px;padding:.5rem 1.3rem;
-  font-size:.82rem;font-weight:500;z-index:300;
-  pointer-events:none;
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(70px);
+  background:var(--ink);color:var(--bg);border-radius:100px;padding:.5rem 1.3rem;
+  font-size:.82rem;font-weight:500;z-index:300;pointer-events:none;
   box-shadow:0 8px 32px rgba(0,0,0,.4);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
-  white-space:nowrap;
-}
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 
-/* ── Fade-up anim ────────────────────────────────────── */
-@keyframes fade-up{
-  from{opacity:0;transform:translateY(20px)}
-  to{opacity:1;transform:none}
-}
-.reveal{
-  opacity:0;transform:translateY(20px);
-  transition:opacity .5s ease,transform .5s ease;
-}
+/* HIDDEN IFRAME for API calls */
+#apiFrame{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:none;}
+
+/* ANIMATIONS */
+@keyframes fade-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease;}
 .reveal.in{opacity:1;transform:none;}
 
-/* ── Footer ──────────────────────────────────────────── */
-footer{
-  position:relative;z-index:1;
-  border-top:1px solid var(--border);
-  padding:1.4rem 2rem;
-  display:flex;align-items:center;
-  justify-content:space-between;flex-wrap:wrap;gap:.8rem;
-  color:var(--muted);font-size:.77rem;
-}
+/* FOOTER */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:1.4rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:.8rem;color:var(--muted);font-size:.77rem;}
 footer a{color:var(--muted);text-decoration:none;}
 footer a:hover{color:var(--accent);}
 
-/* ── Responsive ──────────────────────────────────────── */
+/* RESPONSIVE */
 @media(max-width:640px){
-  nav{padding:.75rem 1rem;}
-  .nav-links{display:none;}
+  nav{padding:.75rem 1rem;}.nav-links{display:none;}
   .panels{grid-template-columns:1fr;}
   .panel:first-child{border-right:none;border-bottom:1px solid var(--border);}
-  h1{font-size:2.5rem;}
-  .page{padding:0 1rem 4rem;}
-  .api-notice{flex-direction:column;}
+  h1{font-size:2.5rem;}.page{padding:0 1rem 4rem;}
+  .api-notice{flex-direction:column;}.lang-bar{gap:.5rem;}
+  .hint-tip{display:none;}
 }
 </style>
 </head>
 <body>
 <div class="glow-orb"></div>
 
-<!-- NAV -->
+<!-- Hidden iframe — we load the Streamlit API URL inside this, then read the result via postMessage -->
+<iframe id="apiFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+
 <nav>
   <div class="logo">Lingua<span>Flow</span></div>
   <div class="nav-links">
@@ -459,11 +241,10 @@ footer a:hover{color:var(--accent);}
   </div>
 </nav>
 
-<!-- HERO -->
 <div class="hero">
   <div class="eyebrow">Helsinki-NLP · MarianMT · Streamlit + Vercel</div>
   <h1>Translate Without<br><span class="grad">Limits</span></h1>
-  <p class="hero-sub">Neural machine translation between French, English, Hindi and Gujarati — free, open source, and fast.</p>
+  <p class="hero-sub">Neural machine translation between French, English, Hindi and Gujarati — free, open source, fast.</p>
   <div class="lang-badges">
     <span class="badge">🇫🇷 French</span>
     <span class="badge">🇬🇧 English</span>
@@ -472,17 +253,13 @@ footer a:hover{color:var(--accent);}
   </div>
 </div>
 
-<!-- MAIN -->
 <div class="page">
-
-  <!-- TRANSLATOR SECTION -->
   <section id="translator" class="reveal">
     <div class="sh">
       <div class="sh-kicker">Live Translation</div>
       <div class="sh-title">Type anything, <em>translate instantly</em></div>
     </div>
 
-    <!-- API status notice -->
     <div class="api-notice" id="apiNotice">
       <div class="notice-left">
         <h4 id="noticeTitle">🔌 Connect Your Streamlit Backend</h4>
@@ -492,9 +269,7 @@ footer a:hover{color:var(--accent);}
       <button class="btn-cfg" onclick="openModal()">⚙ Configure</button>
     </div>
 
-    <!-- Card -->
     <div class="tcard">
-      <!-- Language selector bar -->
       <div class="lang-bar">
         <div class="lang-group">
           <label>From</label>
@@ -505,7 +280,7 @@ footer a:hover{color:var(--accent);}
             <option value="gu">🇮🇳 Gujarati</option>
           </select>
         </div>
-        <button class="swap-btn" onclick="swapLangs()" title="Swap">⇄</button>
+        <button class="swap-btn" onclick="swapLangs()" title="Swap languages">⇄</button>
         <div class="lang-group">
           <label>To</label>
           <select id="tgtLang" onchange="updateLabels()">
@@ -516,34 +291,32 @@ footer a:hover{color:var(--accent);}
           </select>
         </div>
         <div class="spacer"></div>
-        <span style="font-size:.7rem;color:var(--muted)">Ctrl+Enter to translate</span>
+        <span class="hint-tip">Ctrl+Enter to translate</span>
       </div>
 
-      <!-- Input / Output panels -->
       <div class="panels">
         <div class="panel">
           <div class="panel-lbl" id="srcLabel">French</div>
           <textarea id="inputText"
-            placeholder="Type or paste your text here…"
+            placeholder="Type or paste text here…"
             oninput="onTyping()"
             onkeydown="hotkey(event)"></textarea>
         </div>
         <div class="panel">
           <div class="panel-lbl" id="tgtLabel">English</div>
           <div class="output-wrap" id="outputWrap">
-            <span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span>
+            <span class="out-ph" id="outPh">Translation appears here…</span>
             <span id="outText"></span>
           </div>
         </div>
       </div>
 
-      <!-- Action bar -->
       <div class="action-bar">
         <div class="icon-btns">
           <button class="ibtn" onclick="speakOut()">🔊 Listen</button>
           <button class="ibtn" onclick="copyOut()">📋 Copy</button>
           <button class="ibtn" onclick="clearAll()">✕ Clear</button>
-          <button class="ibtn" onclick="checkBackTranslate()">↩ Verify</button>
+          <button class="ibtn" onclick="doBackTranslate()">↩ Verify</button>
         </div>
         <button class="btn-go" id="goBtn" onclick="doTranslate()">
           <span id="goLabel">Translate</span>
@@ -552,146 +325,126 @@ footer a:hover{color:var(--accent);}
       </div>
     </div>
 
-    <!-- Back-translation -->
     <div class="back-row" id="backRow">
       <strong>↩ Back-translation: </strong><span id="backText"></span>
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
   <section id="how" style="margin-top:4.5rem;" class="reveal">
     <div class="sh">
-      <div class="sh-kicker">Architecture</div>
+      <div class="sh-kicker">Setup Guide</div>
       <div class="sh-title">How to <em>connect</em> everything</div>
     </div>
     <div class="steps">
-      <div class="step">
-        <div class="step-n">01</div>
-        <h4>Deploy Backend</h4>
-        <p>Push app.py to GitHub, deploy free on Streamlit Cloud</p>
-        <code>share.streamlit.io</code>
-      </div>
-      <div class="step">
-        <div class="step-n">02</div>
-        <h4>Copy the URL</h4>
-        <p>Get your live Streamlit app URL after deployment</p>
-        <code>your-app.streamlit.app</code>
-      </div>
-      <div class="step">
-        <div class="step-n">03</div>
-        <h4>Configure Here</h4>
-        <p>Click ⚙ Configure above and paste the URL</p>
-        <code>Saved to your browser</code>
-      </div>
-      <div class="step">
-        <div class="step-n">04</div>
-        <h4>Translate!</h4>
-        <p>The API dot turns green and translation goes live</p>
-        <code>● API Online ✓</code>
-      </div>
+      <div class="step"><div class="step-n">01</div><h4>Deploy Backend</h4><p>Push app.py to GitHub, deploy free on Streamlit Cloud</p><code>share.streamlit.io</code></div>
+      <div class="step"><div class="step-n">02</div><h4>Copy the URL</h4><p>Get your live Streamlit URL after it finishes deploying</p><code>your-app.streamlit.app</code></div>
+      <div class="step"><div class="step-n">03</div><h4>Click Configure</h4><p>Hit ⚙ Configure above, paste the URL, click Save &amp; Test</p><code>Saved to your browser</code></div>
+      <div class="step"><div class="step-n">04</div><h4>Translate!</h4><p>The dot turns green and real neural translation goes live</p><code>● API Online ✓</code></div>
     </div>
   </section>
-
 </div>
 
 <footer>
   <div class="logo" style="font-size:.9rem;">LinguaFlow</div>
   <div>Helsinki-NLP · MarianMT · <a href="https://github.com/paradise-007/French-To-English-Translation-NLP" target="_blank">GitHub ↗</a></div>
-  <div>Free & Open Source</div>
+  <div>Free &amp; Open Source</div>
 </footer>
 
-<!-- CONFIGURE MODAL -->
 <div class="overlay" id="overlay" onclick="bgClick(event)">
   <div class="modal">
     <h3>⚙ Configure Streamlit API</h3>
     <div class="modal-hint">
       Deploy <strong>app.py</strong> on
-      <a href="https://share.streamlit.io" target="_blank" style="color:var(--accent)">share.streamlit.io</a>,
-      then copy and paste the full URL below.<br/><br/>
-      Example:<br/>
-      <code>https://paradise-007-linguaflow-backend-app-xxxx.streamlit.app</code>
+      <a href="https://share.streamlit.io" target="_blank" style="color:var(--accent)">share.streamlit.io</a>
+      and paste the full URL below.<br/><br/>
+      It looks like this:<br/>
+      <code>https://paradise-007-linguaflow-backend-app-xxxx.streamlit.app</code><br/><br/>
+      <strong>Note:</strong> First request may take 30–60s if the app is sleeping. The dot will turn green once it responds.
     </div>
-    <label>Your Streamlit App URL</label>
-    <input type="url" id="urlInput"
-      placeholder="https://yourname-yourapp-xxxx.streamlit.app"/>
+    <label>Streamlit App URL</label>
+    <input type="url" id="urlInput" placeholder="https://yourname-app-xxxx.streamlit.app"/>
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="saveAndTest()">Save & Test Connection</button>
+      <button class="btn-save" onclick="saveAndTest()">Save &amp; Test Connection</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ── State ────────────────────────────────────────────────────────────────
-const STORE_KEY = 'lf_streamlit_url';
-let apiUrl = localStorage.getItem(STORE_KEY) || '';
+// ════════════════════════════════════════════════════════
+// HOW THE API WORKS (no CORS proxy needed):
+//
+// Streamlit renders an iframe for st.components.v1.html().
+// That inner iframe runs a <script> that calls:
+//   window.parent.postMessage({type:'lf-result', data:{...}}, '*')
+//
+// This page listens for that postMessage event and resolves
+// the pending Promise with the translation result.
+//
+// Fallback: we also try parsing the iframe's document directly.
+// ════════════════════════════════════════════════════════
 
-const LANG_NAMES = { fr:'French', en:'English', hi:'Hindi', gu:'Gujarati' };
+const STORE = 'lf_streamlit_url';
+let apiUrl = localStorage.getItem(STORE) || '';
+const LANG_NAMES = {fr:'French',en:'English',hi:'Hindi',gu:'Gujarati'};
 
-// ── Demo translations (fallback when API offline) ────────────────────────
-const DEMOS = {
-  'fr→en': {
-    'bonjour':'Hello', 'merci':'Thank you', 'au revoir':'Goodbye',
-    'comment allez vous':'How are you', 'bonne journée':'Have a good day',
-    "je t'aime":'I love you', 'je me sens affreusement mal':'I feel terribly ill',
-    'oui':'Yes', 'non':'No', 'pardon':'Sorry',
-  },
-  'en→fr': {
-    'hello':'Bonjour', 'thank you':'Merci', 'goodbye':'Au revoir',
-    'how are you':'Comment allez-vous', 'yes':'Oui', 'no':'Non',
-    'i love you':"Je t'aime", 'sorry':'Pardon', 'good morning':'Bonjour',
-  },
-  'hi→en': {
-    'नमस्ते':'Hello','धन्यवाद':'Thank you','अलविदा':'Goodbye','हाँ':'Yes','नहीं':'No',
-  },
-  'gu→en': {
-    'નમસ્તે':'Hello','આભાર':'Thank you','અલવિદા':'Goodbye','હા':'Yes','ના':'No',
-  },
-};
+// Pending API call resolver
+let pendingResolve = null;
+let pendingTimer   = null;
 
-function demoLookup(text, src, tgt) {
-  const map = DEMOS[`${src}→${tgt}`] || {};
-  return map[text.toLowerCase().trim()] || null;
-}
-
-// ── Boot ─────────────────────────────────────────────────────────────────
-function init() {
-  updateLabels();
-  updateNotice();
-  checkStatus();
-  setupReveal();
-}
-
-// ── Labels ───────────────────────────────────────────────────────────────
-function updateLabels() {
-  document.getElementById('srcLabel').textContent = LANG_NAMES[document.getElementById('srcLang').value];
-  document.getElementById('tgtLabel').textContent = LANG_NAMES[document.getElementById('tgtLang').value];
-}
-
-// ── Notice bar ───────────────────────────────────────────────────────────
-function updateNotice() {
-  const n = document.getElementById('apiNotice');
-  const title = document.getElementById('noticeTitle');
-  const body = document.getElementById('noticeBody');
-  const urlEl = document.getElementById('noticeUrl');
-  if (apiUrl) {
-    title.textContent = '🔌 Streamlit Backend Connected';
-    body.textContent = 'Sending requests via allorigins.win CORS proxy. Green dot = live translation.';
-    urlEl.textContent = apiUrl + '/?api=1&text={text}&src={src}&tgt={tgt}';
-    urlEl.style.display = 'block';
-    n.classList.add('connected');
-  } else {
-    title.textContent = '🔌 Connect Your Streamlit Backend';
-    body.textContent = 'Paste your deployed Streamlit URL to enable real neural translation.';
-    urlEl.style.display = 'none';
-    n.classList.remove('connected','offline');
+// Listen for postMessage from the Streamlit iframe
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'lf-result' && pendingResolve) {
+    clearTimeout(pendingTimer);
+    const res = pendingResolve;
+    pendingResolve = null;
+    res(e.data.data);
   }
+});
+
+// ── Demo fallback ──────────────────────────────────────
+const DEMOS = {
+  'fr→en':{'bonjour':'Hello','merci':'Thank you','au revoir':'Goodbye',
+    'comment allez vous':'How are you','oui':'Yes','non':'No',
+    'je me sens affreusement mal':'I feel terribly ill',"je t'aime":'I love you'},
+  'en→fr':{'hello':'Bonjour','thank you':'Merci','goodbye':'Au revoir',
+    'how are you':'Comment allez-vous','yes':'Oui','no':'Non','i love you':"Je t'aime"},
+  'hi→en':{'नमस्ते':'Hello','धन्यवाद':'Thank you','अलविदा':'Goodbye'},
+  'gu→en':{'નમસ્તે':'Hello','આભાર':'Thank you','અલવિદા':'Goodbye'},
+};
+function demoLookup(t,s,g){return(DEMOS[`${s}→${g}`]||{})[t.toLowerCase().trim()]||null;}
+
+// ── Core API call via iframe postMessage ───────────────
+function callAPI(text, src, tgt) {
+  return new Promise((resolve) => {
+    if (!apiUrl) { resolve(null); return; }
+
+    const url = `${apiUrl}/?api=1&text=${encodeURIComponent(text)}&src=${encodeURIComponent(src)}&tgt=${encodeURIComponent(tgt)}`;
+    const frame = document.getElementById('apiFrame');
+
+    pendingResolve = resolve;
+
+    // Timeout after 35 seconds (model may be loading)
+    pendingTimer = setTimeout(() => {
+      pendingResolve = null;
+      
+      // Try to read iframe content directly as last resort
+      try {
+        const body = frame.contentDocument?.body?.innerText || '';
+        const m = body.match(/"translation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (m) { resolve({translation: m[1]}); return; }
+      } catch(e) {}
+      
+      resolve(null);
+    }, 35000);
+
+    frame.src = url;
+  });
 }
 
-// ── Status check ─────────────────────────────────────────────────────────
+// ── Status check ───────────────────────────────────────
 function setDot(state, label) {
   document.getElementById('dot').className = 'dot ' + state;
   document.getElementById('statusTxt').textContent = label;
@@ -700,61 +453,25 @@ function setDot(state, label) {
 async function checkStatus() {
   if (!apiUrl) { setDot('', 'Configure API'); return; }
   setDot('checking', 'Checking…');
+  toast('Testing connection — may take 30s if app is sleeping…');
   const result = await callAPI('bonjour', 'fr', 'en');
-  if (result) {
+  if (result && result.translation) {
     setDot('online', 'API Online ✓');
     document.getElementById('apiNotice').classList.add('connected');
-    document.getElementById('apiNotice').classList.remove('offline');
+    document.getElementById('apiNotice').classList.remove('error-state');
+    toast('✓ Connected! Translation is live.');
   } else {
     setDot('error', 'API Offline');
-    document.getElementById('apiNotice').classList.add('offline');
+    document.getElementById('apiNotice').classList.add('error-state');
     document.getElementById('apiNotice').classList.remove('connected');
+    toast('⚠ Could not reach Streamlit — check the URL or wait for it to wake up.');
   }
 }
 
-// ── API call — allorigins CORS proxy ─────────────────────────────────────
-// Streamlit Cloud doesn't send CORS headers, so we route via allorigins.win
-// which fetches the page server-side and returns it as JSON.
-// We then parse the JSON payload from the rendered HTML.
-async function callAPI(text, src, tgt) {
-  if (!apiUrl) return null;
-  const target = `${apiUrl}/?api=1&text=${encodeURIComponent(text)}&src=${encodeURIComponent(src)}&tgt=${encodeURIComponent(tgt)}`;
-  const proxy  = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
-  try {
-    const res  = await fetch(proxy, { signal: AbortSignal.timeout(30000) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const html = data.contents || '';
-
-    // Streamlit renders st.json() inside a stJson component — try several patterns:
-    // Pattern 1: raw JSON object in the HTML
-    let m = html.match(/\{\s*"translation"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"src"/);
-    if (m) return m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"');
-
-    // Pattern 2: JSON inside a <pre> tag (older Streamlit)
-    m = html.match(/<pre[^>]*>\s*(\{[^<]*"translation"[^<]*\})\s*<\/pre>/);
-    if (m) { try { return JSON.parse(m[1]).translation; } catch(e){} }
-
-    // Pattern 3: JSON inside stJson data attribute
-    m = html.match(/data-testid="stJson"[^>]*>([^<]+)</);
-    if (m) { try { return JSON.parse(m[1]).translation; } catch(e){} }
-
-    // Pattern 4: broader scan
-    m = html.match(/"translation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (m) return m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"');
-
-    return null;
-  } catch(e) {
-    console.warn('API error:', e.message);
-    return null;
-  }
-}
-
-// ── Translate ─────────────────────────────────────────────────────────────
+// ── Translate ──────────────────────────────────────────
 async function doTranslate() {
   const text = document.getElementById('inputText').value.trim();
   if (!text) { toast('Please enter some text first.'); return; }
-
   const src = document.getElementById('srcLang').value;
   const tgt = document.getElementById('tgtLang').value;
   if (src === tgt) { toast('Source and target are the same!'); return; }
@@ -763,146 +480,134 @@ async function doTranslate() {
   document.getElementById('backRow').style.display = 'none';
 
   let result = null;
+  if (apiUrl) {
+    const data = await callAPI(text, src, tgt);
+    if (data && data.translation) result = data.translation;
+  }
 
-  // 1. Try live API
-  if (apiUrl) result = await callAPI(text, src, tgt);
-
-  // 2. Fall back to demo dict
   if (!result) {
     result = demoLookup(text, src, tgt);
-    if (result && apiUrl) toast('⚠ API unreachable — showing demo result');
-    if (!result) {
-      if (!apiUrl) result = `[Configure your Streamlit URL to translate this]`;
-      else result = `[API may be waking up — try again in 30 seconds]`;
-    }
+    if (result && apiUrl) toast('⚠ Used demo — API may be sleeping (try again in 30s)');
+    if (!result) result = apiUrl
+      ? '[API may be loading — please wait 30s and try again]'
+      : '[Configure your Streamlit URL above to translate this]';
   }
 
   setLoading(false);
-  renderOutput(result);
+  renderOut(result);
 }
 
-// ── Back translate ────────────────────────────────────────────────────────
-async function checkBackTranslate() {
+// ── Back translate ─────────────────────────────────────
+async function doBackTranslate() {
   const out = document.getElementById('outText').textContent;
   if (!out) { toast('Translate something first!'); return; }
   const src = document.getElementById('srcLang').value;
   const tgt = document.getElementById('tgtLang').value;
   toast('Verifying…');
-  let back = apiUrl ? await callAPI(out, tgt, src) : null;
+  let back = null;
+  if (apiUrl) {
+    const d = await callAPI(out, tgt, src);
+    if (d && d.translation) back = d.translation;
+  }
   if (!back) back = demoLookup(out, tgt, src) || out;
   document.getElementById('backText').textContent = back;
   document.getElementById('backRow').style.display = 'block';
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────
-function renderOutput(text) {
+// ── UI helpers ─────────────────────────────────────────
+function renderOut(text) {
   const wrap = document.getElementById('outputWrap');
-  wrap.innerHTML = `<span id="outPlaceholder" style="display:none"></span><span id="outText">${escHtml(text)}</span>`;
+  wrap.innerHTML = `<span class="out-ph" id="outPh" style="display:none"></span><span id="outText">${escHtml(text)}</span>`;
 }
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function setLoading(on) {
-  const btn = document.getElementById('goBtn');
-  const lbl = document.getElementById('goLabel');
-  const spn = document.getElementById('goSpinner');
-  const wrap = document.getElementById('outputWrap');
-  btn.disabled = on;
-  lbl.style.display = on ? 'none' : '';
-  spn.style.display  = on ? 'block' : 'none';
-  if (on) {
-    wrap.innerHTML = '<div class="loading-row"><span></span><span></span><span></span></div>';
+  const btn=document.getElementById('goBtn'),lbl=document.getElementById('goLabel'),spn=document.getElementById('goSpinner');
+  btn.disabled=on; lbl.style.display=on?'none':''; spn.style.display=on?'block':'none';
+  if(on) document.getElementById('outputWrap').innerHTML='<div class="loading-row"><span></span><span></span><span></span></div>';
+}
+function updateLabels(){
+  document.getElementById('srcLabel').textContent=LANG_NAMES[document.getElementById('srcLang').value];
+  document.getElementById('tgtLabel').textContent=LANG_NAMES[document.getElementById('tgtLang').value];
+}
+function swapLangs(){
+  const s=document.getElementById('srcLang'),t=document.getElementById('tgtLang');
+  const prevOut=document.getElementById('outText')?.textContent||'';
+  [s.value,t.value]=[t.value,s.value];
+  if(prevOut) document.getElementById('inputText').value=prevOut;
+  renderOut(''); document.getElementById('backRow').style.display='none'; updateLabels();
+}
+function onTyping(){
+  if(!document.getElementById('inputText').value){
+    document.getElementById('outputWrap').innerHTML='<span class="out-ph" id="outPh">Translation appears here…</span><span id="outText"></span>';
+    document.getElementById('backRow').style.display='none';
+  }
+}
+function hotkey(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))doTranslate();}
+function speakOut(){
+  const t=document.getElementById('outText')?.textContent; if(!t){toast('Nothing to speak');return;}
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang={fr:'fr-FR',en:'en-US',hi:'hi-IN',gu:'gu-IN'}[document.getElementById('tgtLang').value]||'en-US';
+  speechSynthesis.cancel(); speechSynthesis.speak(u); toast('🔊 Speaking…');
+}
+function copyOut(){
+  const t=document.getElementById('outText')?.textContent; if(!t){toast('Nothing to copy');return;}
+  navigator.clipboard?.writeText(t).then(()=>toast('📋 Copied!'));
+}
+function clearAll(){
+  document.getElementById('inputText').value='';
+  document.getElementById('outputWrap').innerHTML='<span class="out-ph" id="outPh">Translation appears here…</span><span id="outText"></span>';
+  document.getElementById('backRow').style.display='none';
+}
+
+// ── Notice bar ─────────────────────────────────────────
+function updateNotice(){
+  const title=document.getElementById('noticeTitle');
+  const body=document.getElementById('noticeBody');
+  const urlEl=document.getElementById('noticeUrl');
+  if(apiUrl){
+    title.textContent='🔌 Streamlit Backend Configured';
+    body.textContent='Translation requests go directly to your Streamlit app. Green dot = live.';
+    urlEl.textContent=apiUrl+'/?api=1&text={text}&src={src}&tgt={tgt}';
+    urlEl.style.display='block';
+  } else {
+    title.textContent='🔌 Connect Your Streamlit Backend';
+    body.textContent='Paste your deployed Streamlit URL to enable real neural translation.';
+    urlEl.style.display='none';
+    document.getElementById('apiNotice').classList.remove('connected','error-state');
   }
 }
 
-function swapLangs() {
-  const s = document.getElementById('srcLang');
-  const t = document.getElementById('tgtLang');
-  const prevOut = document.getElementById('outText')?.textContent || '';
-  [s.value, t.value] = [t.value, s.value];
-  if (prevOut) document.getElementById('inputText').value = prevOut;
-  renderOutput('');
-  document.getElementById('backRow').style.display = 'none';
-  updateLabels();
-}
-
-function onTyping() {
-  if (!document.getElementById('inputText').value) {
-    document.getElementById('outputWrap').innerHTML =
-      '<span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span><span id="outText"></span>';
-    document.getElementById('backRow').style.display = 'none';
-  }
-}
-
-function hotkey(e) {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doTranslate();
-}
-
-function speakOut() {
-  const t = document.getElementById('outText')?.textContent;
-  if (!t) { toast('Nothing to speak'); return; }
-  const u = new SpeechSynthesisUtterance(t);
-  u.lang = {fr:'fr-FR',en:'en-US',hi:'hi-IN',gu:'gu-IN'}[document.getElementById('tgtLang').value] || 'en-US';
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-  toast('🔊 Speaking…');
-}
-
-function copyOut() {
-  const t = document.getElementById('outText')?.textContent;
-  if (!t) { toast('Nothing to copy'); return; }
-  navigator.clipboard?.writeText(t).then(() => toast('📋 Copied!'));
-}
-
-function clearAll() {
-  document.getElementById('inputText').value = '';
-  document.getElementById('outputWrap').innerHTML =
-    '<span class="out-placeholder" id="outPlaceholder">Translation will appear here…</span><span id="outText"></span>';
-  document.getElementById('backRow').style.display = 'none';
-}
-
-// ── Modal ─────────────────────────────────────────────────────────────────
-function openModal() {
-  document.getElementById('urlInput').value = apiUrl;
-  document.getElementById('overlay').classList.add('open');
-  setTimeout(() => document.getElementById('urlInput').focus(), 100);
-}
-function closeModal() { document.getElementById('overlay').classList.remove('open'); }
-function bgClick(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
-
-async function saveAndTest() {
-  let val = document.getElementById('urlInput').value.trim().replace(/\/+$/, '');
-  if (!val) { toast('Please enter a URL'); return; }
-  if (!val.startsWith('http')) { toast('URL must start with https://'); return; }
-  apiUrl = val;
-  localStorage.setItem(STORE_KEY, apiUrl);
-  closeModal();
-  updateNotice();
-  toast('Saved! Testing connection…');
+// ── Modal ──────────────────────────────────────────────
+function openModal(){document.getElementById('urlInput').value=apiUrl;document.getElementById('overlay').classList.add('open');setTimeout(()=>document.getElementById('urlInput').focus(),100);}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+function bgClick(e){if(e.target===document.getElementById('overlay'))closeModal();}
+async function saveAndTest(){
+  let val=document.getElementById('urlInput').value.trim().replace(/\/+$/,'');
+  if(!val){toast('Please enter a URL');return;}
+  if(!val.startsWith('http')){toast('URL must start with https://');return;}
+  apiUrl=val; localStorage.setItem(STORE,apiUrl); closeModal(); updateNotice();
   await checkStatus();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────
+// ── Toast ──────────────────────────────────────────────
 let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+function toast(msg){
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),4000);
 }
 
-// ── Scroll reveal ─────────────────────────────────────────────────────────
-function setupReveal() {
-  const obs = new IntersectionObserver(
-    es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }),
-    { threshold: 0.1 }
-  );
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+// ── Reveal ─────────────────────────────────────────────
+function setupReveal(){
+  const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.1});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 }
 
+// ── Init ───────────────────────────────────────────────
+function init(){
+  updateLabels(); updateNotice(); setupReveal();
+  if(apiUrl) checkStatus();
+  else setDot('','Configure API');
+}
 init();
 </script>
 </body>
